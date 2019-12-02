@@ -6,7 +6,7 @@ Entity Control Function Library
 -------------------------------------------------------------------------------------------------------------
 About
 -------------------------------------------------------------------------------------------------------------
-This mod currently gives two functions: override_entity and unregister_entity. Using override_entity will allow you to change any aspect of the given entity type, while unregister_entity will remove the given entity from Minetest entirely.
+This mod provides straightforward methods to override or unregister entities, as well as an easy means to get and track specific entities. The file "config.txt" is a list of mob names, and acts as a whitelist for types of entities to track. This is meant for types of effects that, for example, only are meant to concern mobs and not particles or projectiles.
 
 -------------------------------------------------------------------------------------------------------------
 Dependencies and Support
@@ -16,7 +16,7 @@ This mod has no dependencies, and no optional dependencies. It's designed to wor
 -------------------------------------------------------------------------------------------------------------
 License
 -------------------------------------------------------------------------------------------------------------
-The Apache 2.0 License is used with this mod. See http://www.apache.org/licenses/LICENSE-2.0 or LICENSE.md for more details.
+The LGPL v2.1 License is used with this mod. See LICENSE.txt for more details.
 
 -------------------------------------------------------------------------------------------------------------
 Installation
