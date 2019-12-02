@@ -1,0 +1,2 @@
+Bedrock = Grundgestein
+Bedrock is a very hard block. It cannot be mined, altered, destroyed or moved by any means. It appears at the bottom of the world in a flat layer. = Grundgestein ist sehr hart. Es kann nicht gegraben, verändert, zerstört oder bewegt werden. Es taucht am Boden der Welt in einer flachen Ebene auf.

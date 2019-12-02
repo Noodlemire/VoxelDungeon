@@ -1,0 +1,11 @@
+3d_armor
+doors
+entitycontrol
+fire
+hbhunger
+mobs
+mobs_monster
+on_move_callbacks
+player_monoids
+sfinv
+stairs

@@ -1,0 +1,2 @@
+# Sets the height (Y) at which the bedrock layer will be created.
+bedrock2_y (Bedrock height) int -30912

@@ -1,0 +1,22 @@
+#This file defines which entities are allowed to be considered by other mods.
+
+#Dropped items
+__builtin:item
+
+#Monsters (mobs_redo)
+mobs_monster:dirt_monster
+mobs_monster:dungeon_master
+mobs_monster:lava_flan
+mobs_monster:mese_monster
+mobs_monster:oerkki
+mobs_monster:sand_monster
+mobs_monster:spider
+mobs_monster:stone_monster
+mobs_monster:tree_monster
+
+#Mobs (voxeldungeon)
+voxeldungeon:rat
+voxeldungeon:scout
+voxeldungeon:crab
+voxeldungeon:bee
+voxeldungeon:mimic
