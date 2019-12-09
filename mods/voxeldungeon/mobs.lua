@@ -61,7 +61,7 @@ mobs:register_mob("voxeldungeon:rat", {
 	damage = 3,
 	hp_min = 8,
 	hp_max = 8,
-	armor = 99,
+	armor = 100,
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
 	visual = "sprite",
 	textures = {"voxeldungeon_icon_mob_rat.png"},

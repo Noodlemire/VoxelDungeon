@@ -20,10 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
 voxeldungeon.blobs = {}
---voxeldungeon.blobs.blob_instances = {}
 voxeldungeon.blobs.registered_blobs = {}
 
-local TIMESCALE = 2
+local TIMESCALE = 1
 
 local function expandUpon(posses, spreadcondition)
 	local newposses = voxeldungeon.smartVectorTable()
@@ -32,13 +31,15 @@ local function expandUpon(posses, spreadcondition)
 		local p = posses.getVector(i)
 		local a = posses.getValue(i)
 
-		for _, n in pairs(voxeldungeon.utils.NEIGHBORS7) do
-			local newpos = vector.add(p, n)
-			if spreadcondition(newpos) then
-				if not posses.get(newpos) and not newposses.get(newpos) then
-					newposses.set(newpos, 0)
-				elseif posses.get(newpos) then
-					newposses.set(newpos, posses.get(newpos))
+		if a > 0 then
+			for _, n in pairs(voxeldungeon.utils.NEIGHBORS7) do
+				local newpos = vector.add(p, n)
+				if spreadcondition(newpos) then
+					if not posses.get(newpos) and not newposses.get(newpos) then
+						newposses.set(newpos, 0)
+					elseif posses.get(newpos) then
+						newposses.set(newpos, posses.get(newpos))
+					end
 				end
 			end
 		end
@@ -47,115 +48,148 @@ local function expandUpon(posses, spreadcondition)
 	return newposses
 end
 
-function voxeldungeon.blobs.register(nme, spreadcondition, effect)
-	local name = "voxeldungeon:blob_"..nme
+function voxeldungeon.blobs.register(name, spreadcondition, effect)
+	name = "voxeldungeon:blob_"..name
 
-	minetest.register_entity(name,
-	{
-		physical = false,
-		--textures = {"voxeldungeon_blank.png"},
-		collisionbox = {0, 0, 0, 0, 0, 0},
+	voxeldungeon.blobs.registered_blobs[name] = {}
+	local blob = voxeldungeon.blobs.registered_blobs[name]
+
+	blob.posses = voxeldungeon.smartVectorTable()
+	blob.offload = voxeldungeon.smartVectorTable()
+	blob.volume = 0
+	blob.timer = TIMESCALE
 		
-		posses = voxeldungeon.smartVectorTable(),
-		offload = voxeldungeon.smartVectorTable(),
-		volume = 1000,
-		offvolume = 1000,
-		timer = TIMESCALE,
+	blob.on_step = function(dtime)
+		if blob.timer > 0 then
+			blob.timer = blob.timer - dtime
+			return
+		end
 		
-		on_activate = function(self)
-		end,
-		
-		on_step = function(self, dtime)
-			if self.timer > 0 then
-				self.timer = self.timer - dtime
-				return
-			end
-			
-			self.timer = TIMESCALE
+		blob.timer = TIMESCALE
 
-			if self.volume > 0 then
-				self.volume = 0
+		if blob.volume > 0 then
+			blob.volume = 0
 
-				self._evolve(self)
+			blob.evolve()
 
-				local temp = self.offload
-				self.offload = self.posses
-				self.posses = temp
+			local temp = blob.offload
+			blob.offload = blob.posses
+			blob.posses = temp
 
-				self.offvolume = self.volume
-			else
-				self.object:remove()
-				return
-			end
-		end,
+			for i = 1, blob.posses.size() do
+				local p = blob.posses.getVector(i)
+				local v = blob.posses.getValue(i)
 
-		_evolve = function(self)
-			if not self.posses.get(self.object:get_pos()) then return end
+				local objs = {}
 
-			if self.offvolume / self.posses.size() >= 5 then
-				self.posses = expandUpon(self.posses, spreadcondition)
-			end
+				for _, player in ipairs(minetest.get_connected_players()) do
+					local pos = vector.round(player:get_pos())
 
-			for i = 1, self.posses.size() do
-				local p = self.posses.getVector(i)
-				local a = self.posses.getValue(i)
+					if vector.equals(pos, p) then
+						table.insert(objs, player)
+					end
+				end
 
-				if spreadcondition(p) then
-					local count = 1
-					local sum = a or 0
+				for e = 1, entitycontrol.count_entities() do
+					local entity = entitycontrol.get_entity(e)
 
-					for _, n in pairs(voxeldungeon.utils.NEIGHBORS6) do
-						local neighbor = vector.add(p, n)
-						if not voxeldungeon.utils.solid(neighbor) then
-							sum = sum + (self.posses.get(neighbor) or 0)
-							count = count + 1
+					if entitycontrol.isAlive(e) then
+						local pos = vector.round(entity:get_pos())
+
+						if vector.equals(pos, p) then
+							table.insert(objs, entity)
 						end
 					end
-
-					local value = 0
-					if sum >= count then
-						value = math.floor(sum / count) - 1
-					end
-
-					self.offload.set(p, value)
-					self.volume = self.volume + value
-					effect(p, value)
-				else
-					self.offload.del(p)
 				end
+
+				effect(blob, p, v, objs)
 			end
-		end,
+		end
+	end
 
-		_seed = function(self, amount)
-			self.volume = amount
-			self.offvolume = self.volume
-			self.posses.set(self.object:get_pos(), self.volume)
-		end,
-	})
-	
-	voxeldungeon.blobs.registered_blobs[name] = minetest.registered_entities[name]
+	blob.evolve = function()
+		blob.offload = expandUpon(blob.posses, spreadcondition)
+
+		for i = 1, blob.offload.size() do
+			local p = blob.offload.getVector(i)
+
+			if spreadcondition(p) then
+				local count = 1
+				local sum = blob.posses.getValue(i) or 0
+
+				for _, n in pairs(voxeldungeon.utils.NEIGHBORS6) do
+					local neighbor = vector.add(p, n)
+					if not voxeldungeon.utils.solid(neighbor) then
+						sum = sum + (blob.posses.get(neighbor) or 0)
+						count = count + 1
+					end
+				end
+
+				local value = 0
+				if sum >= count then
+					value = math.floor(sum / count) - 1
+				end
+
+				blob.offload.set(p, value)
+				blob.volume = blob.volume + value
+			else
+				blob.offload.del(p)
+			end
+		end
+	end
+
+	blob.seed = function(pos, amount)
+		blob.volume = blob.volume + amount
+		blob.posses.set(pos, amount)
+	end
+
+	minetest.register_globalstep(blob.on_step)
 end
 
-function voxeldungeon.blobs.seed(nme, pos, amount)
-	local name = "voxeldungeon:blob_"..nme
+function voxeldungeon.blobs.seed(name, pos, amount)
+	name = "voxeldungeon:blob_"..name
 	pos = vector.round(pos)
-	local obj = minetest.add_entity(pos, name)
 
-	if obj then
-		local blob = obj:get_luaentity()
-		blob._seed(blob, amount)
-	end
+	voxeldungeon.blobs.registered_blobs[name].seed(pos, amount)
 end
 
-voxeldungeon.blobs.register("toxicgas", function(pos)
-	return not voxeldungeon.utils.solid(pos)
-end, function(pos, amount)
-	local objs = minetest.get_objects_inside_radius(pos, 1)
-	for _, obj in pairs(objs) do
-		obj:set_hp(obj:get_hp() - 1)
+
+
+voxeldungeon.blobs.register("fire", 
+	function(pos)
+		local node = minetest.get_node_or_nil(pos)
+		return true--node and minetest.get_item_group(node.name, "flammable") >= 1
+	end, 
+
+	function(blob, pos, amount, objs)
+		for _, obj in ipairs(objs) do
+			if obj:is_player() then
+				obj:set_hp(obj:get_hp() - 2)
+			else
+				voxeldungeon.mobs.damage(obj, 2, "fire")
+			end
+		end
+		
+		voxeldungeon.particles.factory("flame", pos, 1, TIMESCALE)
 	end
-	
-	if math.random(5) == 1 then
-		voxeldungeon.particles.burst("toxic", pos, 1)
+)
+
+voxeldungeon.blobs.register("toxicgas", 
+	function(pos)
+		return not voxeldungeon.utils.solid(pos)
+	end, 
+
+	function(blob, pos, amount, objs)
+		for _, obj in ipairs(objs) do
+			if obj:is_player() then
+				obj:set_hp(obj:get_hp() - voxeldungeon.utils.getChapter(pos))
+			else
+				voxeldungeon.mobs.damage(obj, voxeldungeon.utils.getChapter(pos), "toxic gas")
+			end
+		end
+		
+		if voxeldungeon.utils.randomDecimal(blob.posses.size() / (blob.posses.size() + 2)) <= 1/3 then
+			voxeldungeon.particles.burst("toxic", pos, 1)
+		end
 	end
-end)
+)

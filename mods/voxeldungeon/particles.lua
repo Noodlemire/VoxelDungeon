@@ -24,30 +24,40 @@ voxeldungeon.particles = {}
 local registered_particles = {}
 local registered_factories = {}
 
-function voxeldungeon.particles.register_particle(name, radius, lifespan, gravity, transformation, drawtype, yscale)
+local function randomVel()
+	return math.random(-1/3, 1/3)
+end
+
+function voxeldungeon.particles.register_particle(name, radius, lifespan, gravity, initialize, transformation, drawtype, yscale, frames)
 	local scale = radius * 0.125
+	frames = frames or 1
 	minetest.register_entity("voxeldungeon:particle_"..name, 
 	{
-		physical = false,
-		timer = 0,
+		_timer = 0,
 		
-		textures = {"voxeldungeon_particle_"..name..".png"},
-		visual_size = 
-		{
-			x = scale, 
-			y = scale * (yscale or 1)
+		initial_properties = {
+			physical = false,
+			textures = {"voxeldungeon_particle_"..name..".png"},
+			visual_size = 
+			{
+				x = scale, 
+				y = scale * (yscale or 1)
+			},
+			collisionbox = {0, 0, 0, 0, 0, 0},
+			visual = drawtype or "sprite",
+			spritediv = {x = 1, y = frames}
 		},
-		collisionbox = {0, 0, 0, 0, 0, 0},
-		visual = drawtype or "sprite",
 		
 		on_activate = function(self, staticdata)
 			local obj = self.object
+
 			obj:setvelocity(
 			{
-				x=(math.random(0,60)-30)/45, 
-				y=(math.random(0,60)-30)/45, 
-				z=(math.random(0,60)-30)/45
+				x = randomVel(), 
+				y = randomVel(), 
+				z = randomVel(),
 			})
+
 			local v = obj:get_velocity()
 			local ax = v.x
 			if ax ~= 0 then ax = -ax / math.abs(ax) / lifespan / 2 end
@@ -58,13 +68,15 @@ function voxeldungeon.particles.register_particle(name, radius, lifespan, gravit
 
 			obj:setacceleration({x=ax, y=ay+gravity, z=az})
 			obj:setyaw(math.random(0,359)/180*math.pi)
+
+			if initialize then initialize(self) end
 		end,
 		
 		on_step = function(self, dtime)
-			transformation(self, lifespan)
+			if transformation then transformation(self, lifespan) end
 
-			self.timer = self.timer+dtime
-			if self.timer >= lifespan then
+			self._timer = self._timer+dtime
+			if self._timer >= lifespan then
 				self.object:remove()
 			end
 		end,
@@ -74,8 +86,8 @@ function voxeldungeon.particles.register_particle(name, radius, lifespan, gravit
 			{
 				visual_size = 
 				{
-					x = scale + self.timer * change, 
-					y = scale * (yscale or 1) + self.timer * change
+					x = scale + self._timer * change, 
+					y = scale * (yscale or 1) + self._timer * change
 				}
 			})
 		end,
@@ -84,8 +96,24 @@ end
 
 
 
-voxeldungeon.particles.register_particle("poison", 1, 0.6, -1, function(self, lifespan)
-	local timer = self.timer
+voxeldungeon.particles.register_particle("flame", 8, 0.8, 1, 
+	function(self)
+		local gbyte = math.random(155, 222)
+		local ghex = voxeldungeon.utils.tohex(gbyte)
+		self.object:settexturemod("^[colorize:#FF"..ghex.."00")
+	end,
+
+	function(self, lifespan)
+		self.resize(self, -0.125)
+	end
+)
+
+voxeldungeon.particles.register_particle("grass", 1, 1.2, 1, nil, function(self, lifespan)
+	self.resize(self, -0.075)
+end)
+
+voxeldungeon.particles.register_particle("poison", 1, 0.6, -1, nil, function(self, lifespan)
+	local timer = self._timer
 	
 	local sbyte = 150 + (lifespan - timer) / lifespan * 100
 	local shex = voxeldungeon.utils.tohex(sbyte)
@@ -96,24 +124,26 @@ voxeldungeon.particles.register_particle("poison", 1, 0.6, -1, function(self, li
 	self.resize(self, 0.125)
 end)
 
-voxeldungeon.particles.register_particle("grass", 1, 1.2, 1, function(self, lifespan)
-	self.resize(self, -0.075)
-end)
+voxeldungeon.particles.register_particle("shaft", 2, 1.2, 0, nil, nil, "upright_sprite", 8)
 
-voxeldungeon.particles.register_particle("shaft", 2, 1.2, 0, function(self, lifespan) end, "upright_sprite", 8)
+voxeldungeon.particles.register_particle("toxic", 8, 3, 0, 
+	function(self)
+		self.object:set_sprite({x = 0, y = 0}, 12, voxeldungeon.utils.randomDecimal(0.4, 0.3), false)
+	end,
 
-voxeldungeon.particles.register_particle("toxic", 8, 3, 0, function(self, lifespan)
-	self.resize(self, 0.05)
-end)
+	function(self, lifespan)
+		self.resize(self, 0.25)
+	end, "sprite", 1, 12
+)
 
 
 
 function voxeldungeon.particles.burst(name, pos, amount)
 	pos = vector.add(pos, 
 	{
-		x = math.random(-0.5, 0.5),
-		y = math.random(-0.5, 0.5),
-		z = math.random(-0.5, 0.5),
+		x = voxeldungeon.utils.randomDecimal(0.25, -0.25),
+		y = voxeldungeon.utils.randomDecimal(0.25, -0.25),
+		z = voxeldungeon.utils.randomDecimal(0.25, -0.25),
 	})
 
 	for i = 1, amount do

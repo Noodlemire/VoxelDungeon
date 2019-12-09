@@ -19,39 +19,64 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
-minetest.register_craftitem("voxeldungeon:bomb", {
-	description = voxeldungeon.utils.itemDescription("Bomb\n \nThis is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.\n \nRight-click while holding a bomb to throw it."),
-	inventory_image = "voxeldungeon_item_bomb.png",
 
-	on_place = function(itemstack, placer, pointed_thing) 
-		tnt.boom(pointed_thing.above, {radius = 2, damage_radius = 2})
-	end,
 
-	on_secondary_use = function(itemstack, user, pointed_thing)
+local function get_pointed_pos(pointed_thing)
+	if pointed_thing.type == "node" then
+		return pointed_thing.above
+	elseif pointed_thing.type == "object" then
+		return pointed_thing.ref:get_pos()
+	end
+end
+
+function voxeldungeon.register_throwingitem(name, desc, callback, itemdef, entdef)
+	itemdef = itemdef or {}
+	entdef = entdef or {}
+
+	itemdef.description = voxeldungeon.utils.itemDescription(desc)
+	itemdef.inventory_image = itemdef.inventory_image or "voxeldungeon_item_"..name..".png"
+
+	itemdef.on_place = function(itemstack, placer, pointed_thing)
+		callback(get_pointed_pos(pointed_thing))
+
+		return voxeldungeon.utils.take_item(placer, itemstack)
+	end
+
+	itemdef.on_secondary_use = function(itemstack, user, pointed_thing)
 		local pos = vector.add(user:get_pos(), {x=0, y=1, z=0})
 		local offset = vector.multiply(user:get_look_dir(), 2)
 
-		local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrown_bomb")
+		local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrown_"..name)
 		projectile:set_velocity(vector.multiply(offset, 8))
 		projectile:set_acceleration({x = 0, y = -12, z = 0})
+
+		return voxeldungeon.utils.take_item(user, itemstack)
 	end
-})
-minetest.register_entity("voxeldungeon:thrown_bomb", {
-	initial_properties = {
+
+	entdef.initial_properties = {
 		visual = "sprite",
 		pointable = false,
-		textures = {"voxeldungeon_item_bomb.png"},
-	},
+		textures = {(itemdef.inventory_image or "voxeldungeon_item_"..name..".png")},
+	}
 
-	on_step = function(self, dtime)
+	entdef.on_step = function(self, dtime)
 		local pos = self.object:get_pos()
 
 		if voxeldungeon.utils.solid(vector.add(pos, vector.normalize(self.object:get_velocity()))) then
-			tnt.boom(pos, {radius = 2, damage_radius = 2})
+			callback(pos)
 			self.object:remove()
 		end
 	end
-})
+
+	minetest.register_craftitem("voxeldungeon:"..name, itemdef)
+	minetest.register_entity("voxeldungeon:thrown_"..name, entdef)
+end
+
+
+
+voxeldungeon.register_throwingitem("bomb", "Bomb\n \nThis is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.\n \nRight-click while holding a bomb to throw it.", function(pos)
+	tnt.boom(pos, {radius = 2, damage_radius = 2})
+end)
 
 minetest.register_craftitem("voxeldungeon:demonite_lump", {
 	description = "Demonite Lump",
@@ -88,42 +113,9 @@ minetest.register_craftitem("voxeldungeon:gold", {
 	stack_max = 99999,
 })
 
-minetest.register_craftitem("voxeldungeon:honeypot", {
-	description = voxeldungeon.utils.itemDescription("Honeypot\n \nThis large honeypot is only really lined with honey, instead it houses a giant bee! These sorts of massive bees usually stay in their hives, perhaps the pot is some sort of specialized trapper's cage? The bee seems pretty content inside the pot with its honey, and buzzes at you warily when you look at it.\n \nRight-click while holding a honeypot to throw it."),
-	inventory_image = "voxeldungeon_item_honeypot.png",
-
-	on_place = function(itemstack, placer, pointed_thing) 
-		minetest.add_entity(pointed_thing.above, "voxeldungeon:bee")
-	end,
-
-	on_secondary_use = function(itemstack, user, pointed_thing)
-		local pos = vector.add(user:get_pos(), {x=0, y=1, z=0})
-		local offset = vector.multiply(user:get_look_dir(), 2)
-
-		local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrown_honeypot")
-		projectile:set_velocity(vector.multiply(offset, 8))
-		projectile:set_acceleration({x = 0, y = -12, z = 0})
-	end
-})
-minetest.register_entity("voxeldungeon:thrown_honeypot", {
-	initial_properties = {
-		visual = "sprite",
-		pointable = false,
-		textures = {"voxeldungeon_item_honeypot.png"},
-	},
-
-	on_step = function(self, dtime)
-		local pos = self.object:get_pos()
-
-		if voxeldungeon.utils.solid(vector.add(pos, vector.normalize(self.object:get_velocity()))) then
-			minetest.add_entity(pos, "voxeldungeon:bee")
-
-			self.object:remove()
-		end
-	end
-})
-
-
+voxeldungeon.register_throwingitem("honeypot", "Honeypot\n \nThis large honeypot is only really lined with honey, instead it houses a giant bee! These sorts of massive bees usually stay in their hives, perhaps the pot is some sort of specialized trapper's cage? The bee seems pretty content inside the pot with its honey, and buzzes at you warily when you look at it.\n \nRight-click while holding a honeypot to throw it.", function(pos)
+	minetest.add_entity(pos, "voxeldungeon:bee")
+end)
 
 minetest.override_item("default:torch", {
 	description = voxeldungeon.utils.itemDescription("Torch\n \nIt's an indispensable item in the underground, which is notorious for its poor ambient lighting."),

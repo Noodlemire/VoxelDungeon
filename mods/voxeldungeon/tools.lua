@@ -19,7 +19,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
+
+
 voxeldungeon.tools = {}
+
+
+
+if not minetest.settings:get_bool("creative_mode") then
+	minetest.override_item("", {
+		tool_capabilities = {
+			full_punch_interval = 0.667,
+			max_drop_level = 0,
+			groupcaps = {
+				crumbly = {times={[2]=3.00, [3]=0.70}, uses=0, maxlevel=1},
+				snappy = {times={[3]=0.40}, uses=0, maxlevel=1},
+				oddly_breakable_by_hand = {times={[1]=3.50,[2]=2.00,[3]=0.70}, uses=0}
+			},
+			damage_groups = {fleshy = 1},
+		}
+	})
+end
 
 minetest.override_item("default:pick_wood", {
 	max_drop_level=1

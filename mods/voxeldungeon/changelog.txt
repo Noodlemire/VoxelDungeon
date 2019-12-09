@@ -1,0 +1,18 @@
+Alpha 1.0.1:
+	Blobs:
+		No longer are anchored to entities
+		All of any one type are tied to the same instance; multiple blobs no longer repeatedly apply their effect when stacked inside of each other
+		A single blob also only applies its effect once per time frame
+		The applying of blob effects has been greatly streamlined and causes much less lag than before
+		New blobs no longer teleport some of themselves to any locations where previous blobs existed.
+		TL;DR: They actually work now.
+
+	Fixed:
+		Throwable items not being taken from the inventory in survival when thrown
+		Random level algorithm of weapons and armor causing +3 and +2 equipment to become much more common than intended.
+		Particles sometimes appearing far farther away from where they're intended to spawn
+		Punching often dealing no damage to rats.
+
+	Visual:
+		Added some textures of grass, dirt, and cobblestone originating from Sprouted Pixel Dungeon
+		Toxic particles now spin

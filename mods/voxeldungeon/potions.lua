@@ -29,7 +29,6 @@ local potion_defs =
 			voxeldungeon.playerhandler.changeSTR(user, 1)
 			voxeldungeon.glog.p("Newfound strength surges through your body.", user) 
 			voxeldungeon.tools.updateStrdiffArmor(user)
-			return voxeldungeon.utils.take_item(user, itemstack)
 		end
 	},
 	{
@@ -43,6 +42,14 @@ local potion_defs =
 	{
 		name = "liquidflame",
 		desc = "Liquid Flame",
+
+		shatter = function(pos)
+			--[[for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
+				local f = vector.add(pos, n)
+
+				voxeldungeon.blobs.seed("fire", f, 200)
+			end--]]
+		end
 	},
 	{
 		name = "might",
@@ -154,61 +161,31 @@ local function default_shatter(pos, color)
 end
 
 local function register_potion(name, desc, color, drink, shatter)
-	minetest.register_entity("voxeldungeon:thrownpotion_"..color, {
-		initial_properties = {
-			visual = "sprite",
-			pointable = false,
-			textures = {"voxeldungeon_item_potion_"..color..".png"},
-		},
-
-		on_step = function(self, dtime)
-			if voxeldungeon.utils.solid(vector.add(self.object:get_pos(), vector.normalize(self.object:get_velocity()))) then
-				if shatter then
-					shatter(self.object:get_pos())
-				else
-					default_shatter(self.object:get_pos(), color)
-				end
-
-				self.object:remove()
-			end
-		end
-	})
-
-	minetest.register_craftitem("voxeldungeon:potion_"..name,
-	{
-		description = voxeldungeon.utils.itemDescription("Potion of "..desc..
+	voxeldungeon.register_throwingitem("potion_"..name, "Potion of "..desc..
 								"\n \nLeft click while holding a potion to drink it."..
-								"\nRight click while holding a potion to throw it."),
+								"\nRight click while holding a potion to throw it.", 
+	function(pos)
+		if shatter then
+			shatter(pos)
+		else
+			default_shatter(pos, color)
+		end
+	end,
+
+	{
 		inventory_image = "voxeldungeon_item_potion_"..color..".png",
 		_cornerLR = "voxeldungeon_icon_potion_"..name..".png",
 
-		on_use = drink or function(itemstack, user) 
-			if shatter then
+		on_use = function(itemstack, user) 
+			if drink then
+				drink(itemstack, user)
+			elseif shatter then
 				shatter(user:get_pos())
 			else
 				default_shatter(user:get_pos(), color) 
 			end
 
 			return voxeldungeon.utils.take_item(user, itemstack)
-		end,
-
-		on_place = function(itemstack, placer, pointed_thing)
-			if shatter then
-				shatter(pointed_thing.above)
-			else
-				default_shatter(pointed_thing.above, color)
-			end
-
-			return voxeldungeon.utils.take_item(placer, itemstack)
-		end,
-
-		on_secondary_use = function(itemstack, user, pointed_thing)
-			local pos = vector.add(user:get_pos(), {x=0, y=1, z=0})
-			local offset = vector.multiply(user:get_look_dir(), 2)
-
-			local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrownpotion_"..color)
-			projectile:set_velocity(vector.multiply(offset, 8))
-			projectile:set_acceleration({x = 0, y = -12, z = 0})
 		end,
 	})
 end

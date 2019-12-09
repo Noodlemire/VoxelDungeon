@@ -111,7 +111,7 @@ local scroll_defs =
 		desc = "Teleportation\n \nThe spell on this parchment instantly transports the reader to a random location up to 100 blocks away. It can be used to escape a dangerous situation, but an unlucky reader might find himself in an even more dangerous place.",
 
 		read = function(itemstack, user, pointed_thing)
-			voxeldungeon.randomteleport(user)
+			voxeldungeon.utils.randomteleport(user)
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end
 	},

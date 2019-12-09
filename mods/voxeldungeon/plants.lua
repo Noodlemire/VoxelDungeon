@@ -161,7 +161,7 @@ end
 
 voxeldungeon.register_plant("fadeleaf", "Fadeleaf\n \nTouching a Fadeleaf will teleport any creature to a random place within 100 blocks.", function(pos, objs)
 	for i = 1, #objs do
-		voxeldungeon.randomteleport(objs[i])
+		voxeldungeon.utils.randomteleport(objs[i])
 	end
 end)
 

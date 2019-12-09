@@ -86,13 +86,19 @@ end
 
 
 
+function entitycontrol.isAlive(index)
+	local ent = entitycontrol.get_entity(index)
+
+	if ent and ent:get_pos() then return true end
+end
+
 function entitycontrol.getFirstEmptyIndex(index)
 	index = index or 1
 	local ent = entitycontrol.get_entity(index)
 
 	if index > entitycontrol.count_entities() then
 		return nil
-	elseif ent and ent:get_pos() then
+	elseif entitycontrol.isAlive(index) then
 		return entitycontrol.getFirstEmptyIndex(index + 1)
 	else
 		return index

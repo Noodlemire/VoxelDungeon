@@ -30,7 +30,6 @@ voxeldungeon.wp = minetest.get_worldpath()..'/'
 --Load library files
 dofile(mp.."utils.lua")
 dofile(mp.."override.lua")
-dofile(mp.."commoneffects.lua")
 dofile(mp.."smartvectortable.lua")
 dofile(mp.."glog.lua")
 dofile(mp.."playerhandler.lua")

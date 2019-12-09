@@ -87,6 +87,37 @@ voxeldungeon.utils.NEIGHBORS26 =
 	{x = 1, y = 1, z = 1},
 }
 
+voxeldungeon.utils.NEIGHBORS27 = 
+{
+	{x = -1, y = -1, z = -1},
+	{x = 0, y = -1, z = -1},
+	{x = 1, y = -1, z = -1},
+	{x = -1, y = 0, z = -1},
+	{x = 0, y = 0, z = -1},
+	{x = 1, y = 0, z = -1},
+	{x = -1, y = 1, z = -1},
+	{x = 0, y = 1, z = -1},
+	{x = 1, y = 1, z = -1},
+	{x = -1, y = -1, z = 0},
+	{x = 0, y = -1, z = 0},
+	{x = 1, y = -1, z = 0},
+	{x = -1, y = 0, z = 0},
+	{x = 0, y = 0, z = 0},
+	{x = 1, y = 0, z = 0},
+	{x = -1, y = 1, z = 0},
+	{x = 0, y = 1, z = 0},
+	{x = 1, y = 1, z = 0},
+	{x = -1, y = -1, z = 1},
+	{x = 0, y = -1, z = 1},
+	{x = 1, y = -1, z = 1},
+	{x = -1, y = 0, z = 1},
+	{x = 0, y = 0, z = 1},
+	{x = 1, y = 0, z = 1},
+	{x = -1, y = 1, z = 1},
+	{x = 0, y = 1, z = 1},
+	{x = 1, y = 1, z = 1},
+}
+
 
 
 voxeldungeon.utils.surface_valid_ground = {"default:dirt_with_grass", "default:dirt_with_coniferous_litter", "default:dirt_with_rainforest_litter",
@@ -222,6 +253,38 @@ function voxeldungeon.utils.randomChances(chanceTable)
 		current = current + chance
 		if current >= selection then
 			return obj
+		end
+	end
+end
+
+function voxeldungeon.utils.randomDecimal(upper, lower)
+	upper = upper or 1
+	lower = lower or 0
+
+	return lower + (math.random(0, 10000) / 10000) * (upper - lower)
+end
+
+function voxeldungeon.utils.randomteleport(obj)
+	for try = 1, 10 do
+		local p = obj:get_pos()
+	
+		local testpos = 
+		{
+			x = p.x + math.random(-100, 100),
+			y = p.y + 0.5,
+			z = p.z + math.random(-100, 100)
+		}
+		
+		if not minetest.registered_nodes[minetest.get_node(testpos).name].walkable then 
+			obj:set_pos(testpos)
+			
+			minetest.sound_play("voxeldungeon_teleport", 
+			{
+				pos = obj:get_pos(),
+				gain = 1.0,
+				max_hear_distance = 32,
+			})
+			return 
 		end
 	end
 end

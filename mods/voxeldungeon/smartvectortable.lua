@@ -25,8 +25,6 @@ function voxeldungeon.smartVectorTable()
 	svt.table = {}
 
 	svt.set = function(keyVect, value)
-		if not keyVect or not value then return end
-
 		for _, v in ipairs(svt.table) do
 			if vector.equals(keyVect, v.k) then
 				v.v = value
@@ -35,6 +33,11 @@ function voxeldungeon.smartVectorTable()
 		end
 
 		table.insert(svt.table, {k = keyVect, v = value})
+	end
+
+	svt.add = function(keyVect, value)
+		local old = svt.get(keyVect) or 0
+		svt.set(keyVect, old + value)
 	end
 
 	svt.del = function(keyVect)
@@ -57,15 +60,28 @@ function voxeldungeon.smartVectorTable()
 	end
 
 	svt.getVector = function(i)
+		if not svt.table[i] then return end
 		return svt.table[i].k
 	end
 
 	svt.getValue = function(i)
+		if not svt.table[i] then return end
 		return svt.table[i].v
 	end
 
 	svt.size = function()
 		return #svt.table
+	end
+
+	svt.combineWith = function(other)
+		for i = 1, other.size() do
+			local k = other.getVector(i)
+			local v = other.getValue(i)
+
+			local old = svt.get(k) or 0
+
+			svt.set(k, old + v)
+		end
 	end
 
 	--[[

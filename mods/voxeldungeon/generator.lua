@@ -259,19 +259,24 @@ local weaponChances = {
 	},
 }
 
-function voxeldungeon.generator.randomArmor(t)
-	local tier = t or 1
-	local arm = voxeldungeon.utils.randomChances(armorChances[tier])
+local function randomLevel()
 	local level = 0
 
 	for i = 3, 1, -1 do
-		if math.random(3 * i) == 1 then
+		if math.random(math.pow(3, i)) == 1 then
 			level = i
 		end
 	end
 
+	return level
+end
+
+function voxeldungeon.generator.randomArmor(t)
+	local tier = t or 1
+	local arm = voxeldungeon.utils.randomChances(armorChances[tier])
+
 	local itemstack = ItemStack({name = arm, count = 1, wear = 0, metadata = ""})
-	voxeldungeon.tools.setLevelOf(itemstack, level)
+	voxeldungeon.tools.setLevelOf(itemstack, randomLevel())
 	return itemstack
 end
 
@@ -308,16 +313,9 @@ end
 function voxeldungeon.generator.randomWeapon(t)
 	local tier = t or 1
 	local wep = voxeldungeon.utils.randomChances(weaponChances[tier])
-	local level = 0
-
-	for i = 3, 1, -1 do
-		if math.random(3 * i) == 1 then
-			level = i
-		end
-	end
 
 	local itemstack = ItemStack({name = wep, count = 1, wear = 0, metadata = ""})
-	voxeldungeon.tools.setLevelOf(itemstack, level)
+	voxeldungeon.tools.setLevelOf(itemstack, randomLevel())
 	return itemstack
 end
 
