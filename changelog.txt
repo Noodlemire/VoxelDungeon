@@ -14,3 +14,45 @@ Alpha 1.0.1:
 
 	Visual:
 		Added some textures of grass, dirt, and cobblestone originating from Sprouted Pixel Dungeon
+
+Alpha 1.1.0:
+	New Mods:
+		bucket by Kahrl, celeron55 (Perttu Ahola), and others
+			-I always intended for there to be buckets, I just forgot to add this. It just so happens to be one of cannons' dependencies.
+
+		cannons by Semmett9, eythen, and addi
+			-When boss fights are implemented, they'll revolve around player preparation and the fact that they're meant to be summoned, not encountered. To help with this, I want this and maybe a couple other things like it, 
+
+		give_initial_stuff by celeron55 (Perttu Ahola) and others
+			-Players now start with a ration of food and cloth armor.
+
+	Buffs:
+		Buff HUD has been implemented.
+		New buff: Rooted, locks the player or mob in place
+		New buff: Bleeding, causes damage over time which comes in an initially high burst, followed by a longer period with little damage per second.
+		New buff: Crippled, halves the movement speed of affected creature
+
+	Traps:
+		Traps can now be hidden. Hidden traps are invisible, but can be punched or right-clicked to be revealed. Debug info also tells you if you're currently pointing at a hidden trap.
+		Added trap variants for each of the layers after the Sewers
+		New trap: Gripping Trap, which applies the Bleeding and Crippled debuffs when triggered.
+		New trap: Toxic Gas Trap, spawns a lot of toxic gas when stepped on.
+		Duration of Poison given by Poison Dart Traps is now depth-dependent.
+
+	Misc:
+		Added a folder of the screenshots to the code
+		New node: Demonite Block, craftable from 9 Demonite Ingots.
+		Mystery Meat now has a chance to apply the Rooted debuff.
+		Potions of Healing now remove Bleeding and Crippled.
+
+	Fixed:
+		Demonite Armor being impossible to craft
+		Traps not spawning in the underground
+		Poison Traps crashing the game when triggered
+		Potions and Scrolls being used up in creative mode unless the creative privilege was applied
+		New plants and foilage not being floodable when they logically should
+
+	Visual:
+		Added some textures of dirt and snow from Remixed Dungeon
+		Added silver sand texture, based on the sand texture from Sprouted Pixel Dungeon
+		Added new sign textures from Pixel Dungeon (only the Sewers one)

@@ -371,7 +371,6 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 		if math.random(4) == 1 then
 			minetest.remove_node(pos)
 			local mimic = minetest.add_entity(pos, "voxeldungeon:mimic")
-			--if mimic then mimic:on_blast(10) end
 		else
 			minetest.registered_nodes[minetest.get_node(pos).name].on_rightclick(pos, minetest.get_node(pos))
 			local blast = minetest.registered_nodes[minetest.get_node(pos).name].on_blast

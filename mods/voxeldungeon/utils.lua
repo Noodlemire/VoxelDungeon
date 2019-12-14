@@ -145,6 +145,16 @@ function voxeldungeon.utils.angleBetweenPoints(x1, x2, y1, y2)
 	return angle
 end
 
+function voxeldungeon.utils.countTableEntries(table)
+	local count = 0
+
+	for _ in pairs(table) do
+		count = count + 1
+	end
+
+	return count
+end
+
 function voxeldungeon.utils.cubesIntersect(v1a, v1b, v2a, v2b)
 	if v1a.x > v1b.x then v1a.x, v1b.x = voxeldungeon.utils.swap(v1a.x, v1b.x) end
 	if v1a.y > v1b.y then v1a.y, v1b.y = voxeldungeon.utils.swap(v1a.y, v1b.y) end
@@ -351,7 +361,7 @@ function voxeldungeon.utils.tableContains(table, obj)
 end
 
 function voxeldungeon.utils.take_item(player, itemstack)
-	if not minetest.check_player_privs(player, "creative") then
+	if not minetest.settings:get_bool("creative_mode") then
 		itemstack:take_item()
 	end
 
@@ -359,7 +369,7 @@ function voxeldungeon.utils.take_item(player, itemstack)
 end
 
 function voxeldungeon.utils.return_item(player, itemstack)
-	if not minetest.check_player_privs(player, "creative") then
+	if not minetest.settings:get_bool("creative_mode") then
 		player:get_inventory():add_item("main", itemstack)
 	end
 

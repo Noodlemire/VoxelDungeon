@@ -71,6 +71,9 @@ local potion_defs =
 
 		drink = function(itemstack, user, pointed_thing)
 			user:set_hp(voxeldungeon.playerhandler.playerdata[user:get_player_name()].HT)
+
+			voxeldungeon.buffs.detach_buff("voxeldungeon:bleeding", user)
+			voxeldungeon.buffs.detach_buff("voxeldungeon:crippled", user)
 			voxeldungeon.buffs.detach_buff("voxeldungeon:poison", user)
 
 			voxeldungeon.glog.p("Your wounds heal completely", user)

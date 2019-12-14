@@ -142,3 +142,27 @@ function voxeldungeon.playerhandler.getTimeFromLastPunch(player)
 
 	return time
 end
+
+
+
+--Stop a player in place, while allowing gravity and fall damage to still occur.
+minetest.register_entity("voxeldungeon:stop_player", {
+	initial_properties = {
+		physical = true,
+		collide_with_objects = false,
+		pointable = false,
+		--is_visible = false,
+		collisionbox = {-0.1, 0.0, -0.1, 0.1, 0.2, 0.1}
+	}
+})
+
+function voxeldungeon.playerhandler.halt(player)
+	local obj = minetest.add_entity(player:get_pos(), "voxeldungeon:stop_player")
+
+	player:set_attach(obj, "", {x = 0, y = 1, z = 0}, {x = 0, y = 0, z = 0})
+
+	minetest.after(0.1, function()
+		player:set_detach()
+		obj:remove()
+	end)
+end

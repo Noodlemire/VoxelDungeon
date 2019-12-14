@@ -48,6 +48,7 @@ dofile(mp.."scrolls.lua")
 dofile(mp.."plants.lua")
 dofile(mp.."tools.lua")
 dofile(mp.."hunger.lua")
+dofile(mp.."cannons.lua")
 
 --Load generation files
 dofile(mp.."rooms.lua")

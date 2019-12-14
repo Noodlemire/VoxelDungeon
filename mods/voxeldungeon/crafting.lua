@@ -19,67 +19,187 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
+
+
+--Armor
+
 minetest.register_craft({
 	output = "voxeldungeon:armor_wood",
-	recipe = {{"group:wood", "", "group:wood"},
+	recipe = 
+	{
+		{"group:wood", "", "group:wood"},
 		{"group:wood", "group:wood", "group:wood"},
-		{"group:wood", "group:wood", "group:wood"}}
+		{"group:wood", "group:wood", "group:wood"}
+	}
 })
 
 minetest.register_craft({
 	output = "voxeldungeon:armor_cactus",
-	recipe = {{"default:cactus", "", "default:cactus"},
+	recipe = 
+	{
+		{"default:cactus", "", "default:cactus"},
 		{"default:cactus", "default:cactus", "default:cactus"},
-		{"default:cactus", "default:cactus", "default:cactus"}}
+		{"default:cactus", "default:cactus", "default:cactus"}
+	}
 })
 
 minetest.register_craft({
 	output = "voxeldungeon:armor_steel",
-	recipe = {{"default:steel_ingot", "", "default:steel_ingot"},
+	recipe = 
+	{
+		{"default:steel_ingot", "", "default:steel_ingot"},
 		{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
-		{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"}}
+		{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"}
+	}
 })
 
 minetest.register_craft({
 	output = "voxeldungeon:armor_mese",
-	recipe = {{"default:mese_crystal", "", "default:mese_crystal"},
+	recipe = 
+	{
+		{"default:mese_crystal", "", "default:mese_crystal"},
 		{"default:mese_crystal", "default:mese_crystal", "default:mese_crystal"},
-		{"default:mese_crystal", "default:mese_crystal", "default:mese_crystal"}}
+		{"default:mese_crystal", "default:mese_crystal", "default:mese_crystal"}
+	}
 })
 
 minetest.register_craft({
 	output = "voxeldungeon:armor_diamond",
-	recipe = {{"default:diamond", "", "default:diamond"},
+	recipe = 
+	{
+		{"default:diamond", "", "default:diamond"},
 		{"default:diamond", "default:diamond", "default:diamond"},
-		{"default:diamond", "default:diamond", "default:diamond"}}
+		{"default:diamond", "default:diamond", "default:diamond"}
+	}
 })
 
-minetest.register_craft({
-	output = "voxeldungeon:demonite",
-	recipe = {{"voxeldungeon:pick_demonite", "", "voxeldungeon:pick_demonite"},
-		{"voxeldungeon:pick_demonite", "voxeldungeon:pick_demonite", "voxeldungeon:pick_demonite"},
-		{"voxeldungeon:pick_demonite", "voxeldungeon:pick_demonite", "voxeldungeon:pick_demonite"}}
-})
 
-minetest.register_craft({
-	output = "voxeldungeon:pick_demonite",
-	recipe = {{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
-		{"", "default:stick", ""},
-		{"", "default:stick", ""}}
-})
 
-minetest.register_craft({
-	output = "voxeldungeon:weapon_sword_demonite",
-	recipe = {{"", "voxeldungeon:demonite_ingot", ""},
-		{"", "voxeldungeon:demonite_ingot", ""},
-		{"", "default:stick", ""}}
-})
+--General Demonite stuff
 
 minetest.register_craft({
 	type = "cooking",
 	output = "voxeldungeon:demonite_ingot",
 	recipe = "voxeldungeon:demonite_lump"
 })
+
+minetest.register_craft({
+	output = "voxeldungeon:armor_demonite",
+	recipe = 
+	{
+		{"voxeldungeon:demonite_ingot", "", "voxeldungeon:demonite_ingot"},
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"}
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:pick_demonite",
+	recipe = {
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+		{"", "default:stick", ""},
+		{"", "default:stick", ""}
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:weapon_sword_demonite",
+	recipe = 
+	{
+		{"", "voxeldungeon:demonite_ingot", ""},
+		{"", "voxeldungeon:demonite_ingot", ""},
+		{"", "default:stick", ""}
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:demonite_block",
+	recipe = 
+	{
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:ball_demonite 5",
+	recipe = 
+	{
+		{"", "voxeldungeon:demonite_ingot", ""},
+		{"voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot", "voxeldungeon:demonite_ingot"},
+		{"", "voxeldungeon:demonite_ingot", ""},
+	}
+})
+
+
+
+--Bed recipes that allow any wool
+
+minetest.register_craft({
+	output = "beds:bed_bottom",
+	recipe = 
+	{
+		{"group:wool", "group:wool", "group:wool"},
+		{"group:wood", "group:wood", "group:wood"}
+	}
+})
+
+minetest.register_craft({
+	output = "beds:fancy_bed_bottom",
+	recipe = 
+	{
+		{"", "", "group:stick"},
+		{"group:wool", "group:wool", "group:wool"},
+		{"group:wood", "group:wood", "group:wood"}
+	}
+})
+
+
+
+--Cannon Ball recipes
+
+minetest.register_craft({
+	output = "voxeldungeon:ball_stone 5",
+	recipe = 
+	{
+		{"", "group:stone", ""},
+		{"group:stone", "group:stone", "group:stone"},
+		{"", "group:stone", ""}
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:ball_steel 5",
+	recipe = 
+	{
+		{"", "default:steel_ingot",""},
+		{"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
+		{"", "default:steel_ingot",""},
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:ball_mese 5",
+	recipe = 
+	{
+		{"", "default:mese_crystal",""},
+		{"default:mese_crystal", "default:mese_crystal", "default:mese_crystal"},
+		{"", "default:mese_crystal",""},
+	}
+})
+
+minetest.register_craft({
+	output = "voxeldungeon:ball_diamond 5",
+	recipe = 
+	{
+		{"", "default:diamond",""},
+		{"default:diamond", "default:diamond", "default:diamond"},
+		{"", "default:diamond",""},
+	}
+})
+
+
 
 minetest.register_craft({
 	type = "cooking",

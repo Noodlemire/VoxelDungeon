@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
-local function register_flatnode(name, desc, image, grps)
+local function register_flatnode(name, desc, image, grps, flood)
 	local i = "voxeldungeon_"..image..".png"
 	minetest.register_node("voxeldungeon:"..name,
 	{
@@ -42,6 +42,7 @@ local function register_flatnode(name, desc, image, grps)
 		buildable_to = true,
 		drop = {},
 		groups = grps,
+		floodable = flood,
 	})
 end
 
@@ -66,19 +67,15 @@ minetest.register_node("voxeldungeon:sewerfloor", {
 	groups = {cracky=3, level=1}
 })
 
-register_flatnode("sewergrass", "Sewer Grass", "tiles_sewers_grass", {flammable = 1, attached_node = 1, dig_immediate = 3})
+register_flatnode("sewers_shortgrass", "Sewer Grass", "tiles_sewers_grass", {flammable = 1, attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("prisons_shortgrass", "Prison Grass", "tiles_prisons_grass", {flammable = 1, attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("caves_shortgrass", "Cave Grass", "tiles_caves_grass", {flammable = 1, attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("cities_shortgrass", "City Grass", "tiles_cities_grass", {flammable = 1, attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("halls_shortgrass", "Hall Grass", "tiles_halls_grass", {flammable = 1, attached_node = 1, dig_immediate = 3}, true)
 
-register_flatnode("prisongrass", "Prison Grass", "tiles_prisons_grass", {flammable = 1, attached_node = 1, dig_immediate = 3})
+register_flatnode("embers", "Embers", "tiles_embers", {attached_node = 1, dig_immediate = 3}, true)
 
-register_flatnode("cavegrass", "Cave Grass", "tiles_caves_grass", {flammable = 1, attached_node = 1, dig_immediate = 3})
-
-register_flatnode("citygrass", "City Grass", "tiles_cities_grass", {flammable = 1, attached_node = 1, dig_immediate = 3})
-
-register_flatnode("hallgrass", "Hall Grass", "tiles_halls_grass", {flammable = 1, attached_node = 1, dig_immediate = 3})
-
-register_flatnode("embers", "Embers", "tiles_embers", {attached_node = 1, dig_immediate = 3})
-
-register_flatnode("sewermoss", "Sewer Moss", "tiles_sewers_moss", {attached_node = 1, dig_immediate = 3})
+register_flatnode("sewermoss", "Sewer Moss", "tiles_sewers_moss", {attached_node = 1, dig_immediate = 3}, true)
 
 minetest.register_node("voxeldungeon:sewerwood", {
 	description = "Sewer Wood",
@@ -102,14 +99,18 @@ minetest.register_node("voxeldungeon:sewerpedestal", {
 	groups = {cracky=3}
 })
 
-register_flatnode("sewerwater", "Sewer Water", "tiles_sewers_water", {attached_node = 1, dig_immediate = 3})
+register_flatnode("sewerwater", "Sewer Water", "tiles_sewers_water", {attached_node = 1, dig_immediate = 3}, true)
 minetest.registered_nodes["voxeldungeon:sewerwater"].tiles = 
 {{
 	name = "voxeldungeon_tiles_sewers_water0.png",
 	animation = {type = "vertical_frames", aspect_w = 16, aspect_h = 16, length = 6}
 }}
 
-register_flatnode("sewer_trap_wornout", "Worn Out Sewer Trap", "tiles_sewers_trap_wornout", {attached_node = 1, dig_immediate = 3})
+register_flatnode("trap_sewers_wornout", "Worn Out Sewer Trap", "tiles_sewers_trap_wornout", {attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("trap_prisons_wornout", "Worn Out Prison Trap", "tiles_prisons_trap_wornout", {attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("trap_caves_wornout", "Worn Out Cave Trap", "tiles_caves_trap_wornout", {attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("trap_cities_wornout", "Worn Out City Trap", "tiles_cities_trap_wornout", {attached_node = 1, dig_immediate = 3}, true)
+register_flatnode("trap_halls_wornout", "Worn Out Hall Trap", "tiles_halls_trap_wornout", {attached_node = 1, dig_immediate = 3}, true)
 
 minetest.register_node("voxeldungeon:sewerpipe", {
 	description = "Sewer Pipe",
@@ -334,60 +335,108 @@ doors.register_door("voxeldungeon:sewerdoor", {
 
 --traps
 
+local namelist = {"sewers", "prisons", "caves", "cities", "halls"}
+local desclist = {"Sewers", "Prisons", "Caves", "Cities", "Halls"}
 
+local function register_trap(name, desc, on_trigger)
+	for i = 1, 5 do
+		local img = "voxeldungeon_tiles_"..namelist[i].."_trap_"..name..".png"
 
-local function register_trap(name, desc, image, grps, whentriggered, trigger)
-	local i = "voxeldungeon_"..image..".png"
-	minetest.register_node("voxeldungeon:trap_"..name, 
-	{
-		description = desc.." Trap", 
-		tiles = {i},
-		inventory_image = i,
-		wield_image = i,
-		
-		node_box = 
+		minetest.register_node("voxeldungeon:trap_"..namelist[i].."_"..name, 
 		{
-			type = "fixed",
-			fixed = {-0.5, -0.5, -0.5, 0.5, -0.499, 0.5},
-		},
-		drawtype = "nodebox",
+			description = desc.." Trap ("..desclist[i]..")", 
+			tiles = {img},
+			inventory_image = img,
+			wield_image = img,
+			
+			node_box = 
+			{
+				type = "fixed",
+				fixed = {-0.5, -0.5, -0.5, 0.5, -0.499, 0.5},
+			},
+			drawtype = "nodebox",
 
-		paramtype = "light",
-		sunlight_propogates = true,
-		walkable = false,
-		groups = grps, 
-		on_step = function(pos, objs)
-		minetest.set_node(pos, {name = "voxeldungeon:"..whentriggered})
-		trigger(pos, objs)
-		end,
-	})
+			paramtype = "light",
+			sunlight_propogates = true,
+			walkable = false,
+			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
+			on_step = function(pos, objs)
+				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_wornout"})
+				on_trigger(pos, objs)
+			end,
+		})
+
+		local reveal = function(pos, node, player)
+			if player and player:is_player() then
+				voxeldungeon.glog.w("You noticed something.", player)
+				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_"..name})
+			end
+		end
+
+		minetest.register_node("voxeldungeon:trap_"..namelist[i].."_"..name.."_hidden", 
+		{
+			description = "Hidden "..desc.." Trap ("..desclist[i]..")", 
+			tiles = {"voxeldungeon_blank.png"},
+			inventory_image = img,
+			wield_image = img,
+			
+			node_box = 
+			{
+				type = "fixed",
+				fixed = {-0.5, -0.5, -0.5, 0.5, -0.499, 0.5},
+			},
+			drawtype = "nodebox",
+
+			paramtype = "light",
+			sunlight_propogates = true,
+			walkable = false,
+			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
+
+			on_step = function(pos, objs)
+				for _, obj in ipairs(objs) do
+					if obj:is_player() then
+						voxeldungeon.glog.i("A hidden pressure plate clicks!", obj)
+					end
+				end
+
+				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_wornout"})
+				on_trigger(pos, objs)
+			end,
+
+			on_punch = reveal,
+			on_rightclick = reveal,
+		})
+	end
 end
 
-register_trap("sewer_poisondart", "Poison Dart", "tiles_sewers_trap_poisondart", {attached_node = 1, oddly_breakable_by_hand = 2}, "sewer_trap_wornout", function(pos, objs)
+register_trap("gripping", "Gripping", function(pos, objs)
 	for i = 1, #objs do
 		if objs[i] then
-			voxeldungeon.attach_buff("voxeldungeon:poison", objs[i], 8)
+			local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
+
+			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", objs[i], damage)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", objs[i], 10)
+		end 
+	end
+end)
+
+register_trap("poisondart", "Poison Dart", function(pos, objs)
+	for i = 1, #objs do
+		if objs[i] then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", objs[i], 4 + math.floor(voxeldungeon.utils.getDepth(pos) / 2))
 		end 
 	end
 	voxeldungeon.particles.burst("poison", pos, 3)
 end)
 
-register_trap("sewer_teleport", "Teleportation", "tiles_sewers_trap_teleport", {attached_node = 1, oddly_breakable_by_hand = 2}, "sewer_trap_wornout", function(pos, objs)
+register_trap("teleport", "Teleportation", function(pos, objs)
 	for i = 1, #objs do
-		for try = 1, 10 do
-			local o = objs[i]
-			local p = o:get_pos()
-		
-			o:setpos(
-			{
-				x = p.x + math.random(-100, 100),
-				y = p.y + 0.5,
-				z = p.z + math.random(-100, 100)
-			})
-			
-			if not minetest.registered_nodes[minetest.get_node(o:get_pos()).name].walkable then return end
-		end
+		voxeldungeon.utils.randomteleport(objs[i])
 	end
+end)
+
+register_trap("toxicgas", "Toxic Gas", function(pos, objs)
+	voxeldungeon.blobs.seed("toxicgas", pos, 1000)
 end)
 
 
@@ -561,6 +610,13 @@ minetest.register_node("voxeldungeon:halldemonite", {
 --Misc
 
 
+
+minetest.register_node("voxeldungeon:demonite_block", {
+	description = "Demonite Block",
+	tiles = {"voxeldungeon_tiles_demonite_block.png"},
+	groups = {cracky=3, level=5},
+	sounds = default.node_sound_stone_defaults(),
+})
 
 minetest.after(0, minetest.override_item, "default:chest", 
 {

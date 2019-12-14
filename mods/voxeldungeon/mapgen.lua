@@ -161,282 +161,118 @@ minetest.register_decoration({
 	decoration = {"voxeldungeon:plant_fadeleaf", "voxeldungeon:plant_firebloom", "voxeldungeon:plant_sorrowmoss", "voxeldungeon:plant_sungrass"}
 })
 
-minetest.register_decoration({
-	name = "voxeldungeon:traps_sewers",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.sewers_valid_ground,
+local namelist = {"sewers", "prisons", "caves", "cities", "halls"}
+local place_on_list = {
+	voxeldungeon.utils.sewers_valid_ground, 
+	voxeldungeon.utils.prisons_valid_ground,
+	voxeldungeon.utils.caves_valid_ground,
+	voxeldungeon.utils.cities_valid_ground,
+	voxeldungeon.utils.halls_valid_ground,
+}
 
-	sidelen = 16,
-	noise_params = {
-		offset = 0,
-		scale = 0.01,
-		spread = {x = 100, y = 100, z = 100},
-		seed = 5478,
-		octaves = 3,
-		persist = 0.6
-	},
+for i = 1, 5 do
+	minetest.register_decoration({
+		name = "voxeldungeon:traps_"..namelist[i],
+		
+		deco_type = "simple",
+		place_on = place_on_list[i],
 
-        y_max = 6,
-	y_min = -31000,
+		sidelen = 16,
+		noise_params = {
+			offset = 0,
+			scale = 0.01,
+			spread = {x = 100, y = 100, z = 100},
+			seed = 5478,
+			octaves = 3,
+			persist = 0.6
+		},
 
-	flags = "all_floors",
-	decoration = {"voxeldungeon:trap_sewers_poisondart", "voxeldungeon:trap_sewers_teleport"}
-})
+		y_max = 6,
+		y_min = -31000,
+
+		flags = "all_floors",
+		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping", "voxeldungeon:trap_"..namelist[i].."_poisondart", 
+				"voxeldungeon:trap_"..namelist[i].."_teleport", "voxeldungeon:trap_"..namelist[i].."_toxicgas"}
+	})
+
+	minetest.register_decoration({
+		name = "voxeldungeon:traps_"..namelist[i].."_hidden",
+		
+		deco_type = "simple",
+		place_on = place_on_list[i],
+
+		sidelen = 16,
+		noise_params = {
+			offset = 0,
+			scale = 0.05,
+			spread = {x = 100, y = 100, z = 100},
+			seed = 7685,
+			octaves = 3,
+			persist = 0.6
+		},
+
+		y_max = 6,
+		y_min = -31000,
+
+		flags = "all_floors",
+		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping_hidden", "voxeldungeon:trap_"..namelist[i].."_poisondart_hidden", 
+				"voxeldungeon:trap_"..namelist[i].."_teleport_hidden", "voxeldungeon:trap_"..namelist[i].."_toxicgas_hidden"}
+	})
 
 
 
---Foilage is a bit of a special case, because it is meant to come in patches. However, patches are mixtures of short grass (simple), and tall grass (schematic)
+	--Foilage is a bit of a special case, because it is meant to come in patches. However, patches are mixtures of short grass (simple), and tall grass (schematic)
 
-minetest.register_decoration({
-	name = "voxeldungeon:sewers_shortgrass",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.sewers_valid_ground,
+	minetest.register_decoration({
+		name = "voxeldungeon:"..namelist[i].."_shortgrass",
+		
+		deco_type = "simple",
+		place_on = place_on_list[i],
 
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.75,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
+		sidelen = 16,
+		noise_params = {
+			offset = -0.9,
+			scale = 1.75,
+			spread = {x = 10, y = 10, z = 10},
+			seed = 329,
+			octaves = 1,
+			persist = 0.0,
+			flags = "absvalue, eased"
+		},
 
-        y_max = 6,
-	y_min = -31000,
+		y_max = 6,
+		y_min = -31000,
 
-	flags = "all_floors",
-	decoration = "voxeldungeon:sewergrass"
-})
+		flags = "all_floors",
+		decoration = "voxeldungeon:"..namelist[i].."_shortgrass"
+	})
 
-minetest.register_decoration({
-	name = "voxeldungeon:sewers_tallgrass",
-	
-	deco_type = "schematic",
-	place_on = voxeldungeon.utils.sewers_valid_ground,
+	minetest.register_decoration({
+		name = "voxeldungeon:"..namelist[i].."_tallgrass",
+		
+		deco_type = "schematic",
+		place_on = place_on_list[i],
 
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.5,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
+		sidelen = 16,
+		noise_params = {
+			offset = -0.9,
+			scale = 1.5,
+			spread = {x = 10, y = 10, z = 10},
+			seed = 329,
+			octaves = 1,
+			persist = 0.0,
+			flags = "absvalue, eased"
+		},
 
-	schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/sewers_tallgrass.mts",
+		schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/"..namelist[i].."_tallgrass.mts",
 
-        y_max = 6,
-	y_min = -31000,
+		y_max = 6,
+		y_min = -31000,
 
-	flags = "all_floors, force_placement",
-	place_offset_y = 1,
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:prisons_shortgrass",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.prisons_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.75,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors",
-	decoration = "voxeldungeon:prisongrass"
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:prisons_tallgrass",
-	
-	deco_type = "schematic",
-	place_on = voxeldungeon.utils.prisons_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.5,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-	schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/prisons_tallgrass.mts",
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors, force_placement",
-	place_offset_y = 1,
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:caves_shortgrass",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.caves_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.75,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors",
-	decoration = "voxeldungeon:cavegrass"
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:caves_tallgrass",
-	
-	deco_type = "schematic",
-	place_on = voxeldungeon.utils.caves_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.5,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-	schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/caves_tallgrass.mts",
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors, force_placement",
-	place_offset_y = 1,
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:cities_shortgrass",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.cities_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.75,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors",
-	decoration = "voxeldungeon:citygrass"
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:citie_tallgrass",
-	
-	deco_type = "schematic",
-	place_on = voxeldungeon.utils.cities_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.5,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-	schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/cities_tallgrass.mts",
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors, force_placement",
-	place_offset_y = 1,
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:halls_shortgrass",
-	
-	deco_type = "simple",
-	place_on = voxeldungeon.utils.halls_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.75,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors",
-	decoration = "voxeldungeon:hallgrass"
-})
-
-minetest.register_decoration({
-	name = "voxeldungeon:halls_tallgrass",
-	
-	deco_type = "schematic",
-	place_on = voxeldungeon.utils.halls_valid_ground,
-
-	sidelen = 16,
-	noise_params = {
-		offset = -0.9,
-		scale = 1.5,
-		spread = {x = 10, y = 10, z = 10},
-		seed = 329,
-		octaves = 1,
-		persist = 0.0,
-		flags = "absvalue, eased"
-	},
-
-	schematic = minetest.get_modpath("voxeldungeon") .. "/schematics/halls_tallgrass.mts",
-
-        y_max = 6,
-	y_min = -31000,
-
-	flags = "all_floors, force_placement",
-	place_offset_y = 1,
-})
+		flags = "all_floors, force_placement",
+		place_offset_y = 1,
+	})
+end
 
 
 

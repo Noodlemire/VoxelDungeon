@@ -41,11 +41,14 @@ register_food("ration", "Ration of Food\n \nNothing fancy here: dried meat, some
 register_food("pasty", "Pasty\n \nThis is an authentic Cornish pasty with a traditional filling of beef and potato.", 12)
 
 register_food("mystery_meat", "Mystery Meat\n \nEat at your own risk!", 4, function(itemstack, user) 
-	local effect = math.random(1, 2)
+	local effect = math.random(3)
 
 	if effect == 2 then
 		voxeldungeon.glog.w("You are not feeling well.", user)
 		voxeldungeon.buffs.attach_buff("voxeldungeon:poison", user, voxeldungeon.playerhandler.playerdata[user:get_player_name()].HT / 5)
+	elseif effect == 3 then
+		voxeldungeon.glog.w("You can't feel your legs!", user)
+		voxeldungeon.buffs.attach_buff("voxeldungeon:rooted", user, 10)
 	end
 end)
 

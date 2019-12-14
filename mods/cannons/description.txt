@@ -1,0 +1,3 @@
+The Cannons mod adds Cannons to the game.
+to shot insert muni and gunpowder and punch that with a torch.
+the muni can destroy nodes and hurts players.
