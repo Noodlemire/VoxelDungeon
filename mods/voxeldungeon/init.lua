@@ -32,8 +32,11 @@ dofile(mp.."utils.lua")
 dofile(mp.."override.lua")
 dofile(mp.."smartvectortable.lua")
 dofile(mp.."glog.lua")
+dofile(mp.."storage.lua")
 dofile(mp.."playerhandler.lua")
 dofile(mp.."itemselector.lua")
+dofile(mp.."generator.lua")
+dofile(mp.."mobkit.lua")
 
 --Load gameplay files
 --dofile(mp.."inventory.lua")
@@ -49,13 +52,12 @@ dofile(mp.."plants.lua")
 dofile(mp.."tools.lua")
 dofile(mp.."hunger.lua")
 dofile(mp.."cannons.lua")
+dofile(mp.."crafting.lua")
 
---Load generation files
+--Load world generation files
 dofile(mp.."rooms.lua")
 dofile(mp.."dungeons.lua")
-dofile(mp.."generator.lua")
 dofile(mp.."mapgen.lua")
-dofile(mp.."crafting.lua")
 
 --Unregistration files
 dofile(mp.."trashbin.lua")

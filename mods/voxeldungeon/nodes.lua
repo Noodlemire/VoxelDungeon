@@ -431,12 +431,12 @@ end)
 
 register_trap("teleport", "Teleportation", function(pos, objs)
 	for i = 1, #objs do
-		voxeldungeon.utils.randomteleport(objs[i])
+		voxeldungeon.utils.randomTeleport(objs[i])
 	end
 end)
 
 register_trap("toxicgas", "Toxic Gas", function(pos, objs)
-	voxeldungeon.blobs.seed("toxicgas", pos, 1000)
+	voxeldungeon.blobs.seed("toxicgas", pos, 8000)
 end)
 
 

@@ -164,9 +164,18 @@ end
 
 
 
+voxeldungeon.register_plant("earthroot", "Earthroot\n \nWhen a creature touches an Earthroot, its roots create a kind of natural armor around it, which absorb all damage until they break.", function(pos, objs)
+	for i = 1, #objs do
+		if objs[i]:is_player() then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_armor", objs[i],
+				voxeldungeon.playerhandler.playerdata[objs[i]:get_player_name()].HT - 1)
+		end 
+	end
+end)
+
 voxeldungeon.register_plant("fadeleaf", "Fadeleaf\n \nTouching a Fadeleaf will teleport any creature to a random place within 100 blocks.", function(pos, objs)
 	for i = 1, #objs do
-		voxeldungeon.utils.randomteleport(objs[i])
+		voxeldungeon.utils.randomTeleport(objs[i])
 	end
 end)
 
@@ -175,7 +184,7 @@ voxeldungeon.register_plant("firebloom", "Firebloom\n \nWhen something touches a
 end)
 
 voxeldungeon.register_plant("rotberry", "Rotberry", function(pos)
-	voxeldungeon.blobs.seed("toxicgas", pos, 100)
+	voxeldungeon.blobs.seed("toxicgas", pos, 300)
 end)
 
 voxeldungeon.register_plant("sorrowmoss", "Sorrowmoss\n \nA Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.", function(pos, objs)
@@ -186,7 +195,7 @@ voxeldungeon.register_plant("sorrowmoss", "Sorrowmoss\n \nA Sorrowmoss is a flow
 	voxeldungeon.particles.burst("poison", pos, 3)
 end)
 
-voxeldungeon.register_plant("sungrass", "Sungrass\n \n	Sungrass is renowned for its sap's healing properties, though the user must stand still for it to work.", function(pos, objs)
+voxeldungeon.register_plant("sungrass", "Sungrass\n \nSungrass is renowned for its sap's healing properties, though the user must stand still for it to work.", function(pos, objs)
 	for i = 1, #objs do
 		if objs[i]:is_player() then
 			voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_healing", objs[i],

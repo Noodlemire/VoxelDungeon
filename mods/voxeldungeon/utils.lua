@@ -44,6 +44,18 @@ voxeldungeon.utils.NEIGHBORS7 =
 	{x = 0, y = 0, z = 1},
 }
 
+voxeldungeon.utils.NEIGHBORS8 = 
+{
+	{x = -1, y = -1, z = 0},
+	{x = 0, y = -1, z = 0},
+	{x = 1, y = -1, z = 0},
+	{x = -1, y = 0, z = 0},
+	{x = 1, y = 0, z = 0},
+	{x = -1, y = 1, z = 0},
+	{x = 0, y = 1, z = 0},
+	{x = 1, y = 1, z = 0},
+}
+
 voxeldungeon.utils.NEIGHBORS9 = 
 {
 	{x = -1, y = -1, z = 0},
@@ -199,6 +211,30 @@ function voxeldungeon.utils.deepCloneTable(obj)
 	return clone
 end
 
+function voxeldungeon.utils.directLineOfSight(a, b)
+	local steps = vector.distance(a, b)
+
+	for i = 0, steps do
+		local c
+
+		if steps > 0 then
+			c = vector.round({
+				x = a.x + (b.x - a.x) * (i / steps),
+				y = a.y + (b.y - a.y) * (i / steps),
+				z = a.z + (b.z - a.z) * (i / steps),
+			})
+		else
+			c = vector.round(a)
+		end
+
+		if voxeldungeon.utils.solid(c) then
+			return false
+		end
+	end
+
+	return true
+end
+
 function voxeldungeon.utils.gate(min, val, max)
 	if min and val and val < min then
 		return min
@@ -223,6 +259,24 @@ function voxeldungeon.utils.getDepth(pos)
 	local depth = math.ceil(pos.y / -60)
 
 	return voxeldungeon.utils.gate(0, depth, 25)
+end
+
+function voxeldungeon.utils.getPlayersInArea(pos, radius, xray)
+	local players = {}
+
+	for _, plr in pairs(minetest.get_connected_players()) do
+		local plrpos = plr:get_pos()
+		if plrpos then
+			plrpos.y = plrpos.y + 1
+
+			if vector.distance(pos, plrpos) <= radius and 
+				(xray or voxeldungeon.buffs.get_buff("voxeldungeon:mindvision", plr) or voxeldungeon.utils.directLineOfSight(pos, plrpos)) then
+				table.insert(players, plr)
+			end
+		end
+	end
+
+	return players
 end
 
 function voxeldungeon.utils.itemDescription(desc)
@@ -252,6 +306,17 @@ function voxeldungeon.utils.itemDescription(desc)
 	return string.sub(result, 1, string.len(result)-1)
 end
 
+function voxeldungeon.utils.itemShortDescription(item)
+	local level = item:get_meta():get_int("voxeldungeon:level")
+
+	if level and level > 0 then
+		local desc = minetest.registered_items[item:get_name()].description
+		return desc.." +"..level
+	else
+		return voxeldungeon.utils.splitstring(item:get_description(), '\n')[1]
+	end
+end
+
 function voxeldungeon.utils.randomChances(chanceTable)
 	local sum = voxeldungeon.utils.sumChances(chanceTable)
 	if sum == 0 then return end
@@ -274,28 +339,65 @@ function voxeldungeon.utils.randomDecimal(upper, lower)
 	return lower + (math.random(0, 10000) / 10000) * (upper - lower)
 end
 
-function voxeldungeon.utils.randomteleport(obj)
-	for try = 1, 10 do
-		local p = obj:get_pos()
-	
-		local testpos = 
-		{
-			x = p.x + math.random(-100, 100),
-			y = p.y + 0.5,
-			z = p.z + math.random(-100, 100)
-		}
-		
-		if not minetest.registered_nodes[minetest.get_node(testpos).name].walkable then 
-			obj:set_pos(testpos)
-			
-			minetest.sound_play("voxeldungeon_teleport", 
-			{
-				pos = obj:get_pos(),
-				gain = 1.0,
-				max_hear_distance = 32,
-			})
-			return 
+function voxeldungeon.utils.randomObject(table)
+	if #table > 0 then
+		return table[math.random(#table)]
+	end
+
+	return nil
+end
+
+function voxeldungeon.utils.randomTeleport(obj)
+	local range = 75
+	local p = vector.round(obj:get_pos())
+	local nonsolids = {}
+
+	for a = -range, range, 2 do
+		for b = -range, range, 2 do
+			local testpos = {x = p.x + a, y = p.y, z = p.z + b}
+			local testpos2 = {x = p.x + a, y = p.y + 1, z = p.z + b}
+			local testpos3 = {x = p.x + a, y = p.y + 2, z = p.z + b}
+
+			if not voxeldungeon.utils.solid(testpos) and not voxeldungeon.utils.solid(testpos2) and not voxeldungeon.utils.solid(testpos3) then 
+				table.insert(nonsolids, testpos)
+			end
 		end
+	end
+
+	if #nonsolids > 0 then
+		obj:set_pos(voxeldungeon.utils.randomObject(nonsolids))
+			
+		minetest.sound_play("voxeldungeon_teleport", 
+		{
+			pos = obj:get_pos(),
+			gain = 1.0,
+			max_hear_distance = 32,
+		})
+
+		if obj:is_player() then
+			voxeldungeon.glog.i("In the blink of an eye, you are teleported a another location.", obj)
+		end
+	elseif obj:is_player() then
+		voxeldungeon.glog.i("There's no enough space available for a teleportation.", obj)
+	end
+end
+
+function voxeldungeon.utils.randomItem(invref, listname)
+	listname = listname or "main"
+	local items = {}
+
+	for i = 1, invref:get_size(listname) do
+		local stack = invref:get_stack(listname, i)
+
+		if not stack:is_empty() then
+			table.insert(items, stack)
+		end
+	end
+
+	if #items > 0 then
+		return items[math.random(#items)]
+	else
+		return nil
 	end
 end
 
@@ -322,7 +424,7 @@ function voxeldungeon.utils.solid(pos)
 	
 	local nodedef = minetest.registered_nodes[node.name]
 	
-	return (node.name ~= "air" and nodedef and nodedef.walkable)
+	return (node.name ~= "air" and node.name ~= "ignore" and nodedef and nodedef.walkable)
 end
 
 function voxeldungeon.utils.splitstring(input, sep)

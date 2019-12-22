@@ -387,10 +387,8 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 		else
 			minetest.swap_node(pos, {name = "default:chest", param1 = node.param1, param2 = node.param2})
 
-			local hasClicker = clicker ~= nil
-
 			local name
-			if hasClicker then name = clicker:get_player_name() end
+			if clicker then name = clicker:get_player_name() end
 
 			local newnode = minetest.get_node(pos)
 			local newdef = minetest.registered_nodes[newnode.name]
@@ -407,7 +405,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 					itemSlot = inv:get_stack("main", slotNum)
 				until(itemSlot and itemSlot:is_empty())
 
-				if not hasClicker then
+				if not clicker then
 					inv:set_stack("main", slotNum, voxeldungeon.generator.random(tier))
 				elseif voxeldungeon.generator.limited_drops[name].sou[tier] < voxeldungeon.generator.drop_limits.sou[tier] and 
 						math.random(12) == 1 then
@@ -426,7 +424,8 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 				end
 			end
 
-			if hasClicker then
+			if clicker then
+				voxeldungeon.generator.saveDropLimits(clicker)
 				newdef.on_rightclick(pos, node, clicker)
 			end
 		end
@@ -441,75 +440,52 @@ voxeldungeon.generator.drop_limits = {
 	pom = {5, 5, 5, 5, 5},
 }
 
-local function saveDropLimits(player, file)
-	for _, v in ipairs(voxeldungeon.generator.limited_drops[player].sou) do
-		file:write(tostring(v)..'\n')
+function voxeldungeon.generator.saveDropLimits(player)
+	local name = player:get_player_name()
+
+	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].sou) do
+		voxeldungeon.storage.put(name.."_sou_"..i, v)
 	end
-	for _, v in ipairs(voxeldungeon.generator.limited_drops[player].pos) do
-		file:write(tostring(v)..'\n')
+	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].pos) do
+		voxeldungeon.storage.put(name.."_pos_"..i, v)
 	end
-	for _, v in ipairs(voxeldungeon.generator.limited_drops[player].pom) do
-		file:write(tostring(v)..'\n')
+	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].pom) do
+		voxeldungeon.storage.put(name.."_pom_"..i, v)
 	end
 end
 
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
-	local filePath = voxeldungeon.wp..name.."_limited_drops.txt"
-	local file = io.open(filePath, "r")
+	
+	voxeldungeon.generator.limited_drops[name] = {}
 
-	if file then
-		--read all contents of file into a table of strings
-		local contents = {}
-		for line in file:lines() do
-			table.insert(contents, line)
+	if voxeldungeon.storage.getBool("loadedDropLimits_"..name) then
+		voxeldungeon.generator.limited_drops[name].sou = {}
+		voxeldungeon.generator.limited_drops[name].pos = {}
+		voxeldungeon.generator.limited_drops[name].pom = {}
+
+		for i = 1, 5 do
+			voxeldungeon.generator.limited_drops[name].sou[i] = voxeldungeon.storage.getNum(name.."_sou_"..i)
+			voxeldungeon.generator.limited_drops[name].pos[i] = voxeldungeon.storage.getNum(name.."_pos_"..i)
+			voxeldungeon.generator.limited_drops[name].pom[i] = voxeldungeon.storage.getNum(name.."_pom_"..i)
 		end
-
-		voxeldungeon.generator.limited_drops[name] = 
-		{
-			sou = {tonumber(contents[1]), tonumber(contents[2]), tonumber(contents[3]), tonumber(contents[4]), tonumber(contents[5])},
-			pos = {tonumber(contents[6]), tonumber(contents[7]), tonumber(contents[8]), tonumber(contents[9]), tonumber(contents[10])},
-			pom = {tonumber(contents[11]), tonumber(contents[12]), tonumber(contents[13]), tonumber(contents[14]), tonumber(contents[15])},
-		}
-
-		io.close(file)
 	else
-		--create file because it doesn't exist yet
-		file = io.open(filePath, "w")
+		voxeldungeon.generator.limited_drops[name].sou = {0, 0, 0, 0, 0}
+		voxeldungeon.generator.limited_drops[name].pos = {0, 0, 0, 0, 0}
+		voxeldungeon.generator.limited_drops[name].pom = {0, 0, 0, 0, 0}
 
-		voxeldungeon.generator.limited_drops[name] = voxeldungeon.utils.deepCloneTable(voxeldungeon.generator.drop_limits)
-		for k, v in pairs(voxeldungeon.generator.limited_drops[name]) do
-			if type(v) == "table" then
-				for rk, rv in ipairs(v) do
-					voxeldungeon.generator.limited_drops[name][k][rk] = 0
-				end
-			else
-				voxeldungeon.generator.limited_drops[name][k] = 0
-			end
-		end
+		voxeldungeon.generator.saveDropLimits(player)
 
-		saveDropLimits(name, file)
-
-		io.close(file)
+		voxeldungeon.storage.put("loadedDropLimits_"..name, true)
 	end
 end)
 
-local function leaveplayer(player)
-	local name = player:get_player_name()
-	local droplimitpath = voxeldungeon.wp..name.."_limited_drops.txt"
-	local droplimitfile = io.open(droplimitpath, "w")
-
-	saveDropLimits(name, droplimitfile)
-
-	io.close(droplimitfile)
-end
-
 minetest.register_on_leaveplayer(function(player)
-	leaveplayer(player)
+	--saveDropLimits(player:get_player_name())
 end)
 
 minetest.register_on_shutdown(function()
 	for _, v in pairs(minetest.get_connected_players()) do
-		leaveplayer(v)
+		--saveDropLimits(v:get_player_name())
 	end
 end)

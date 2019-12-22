@@ -47,7 +47,7 @@ function voxeldungeon.itemselector.showSelector(player, label, callback)
 			fs = fs.."image["..x..","..y..";1,1;voxeldungeon_ui_itemslot.png]"
 		elseif minetest.get_item_group(item:get_name(), "upgradable") > 0 then
 			fs = fs.."item_image_button["..x..","..y..";1,1;"..item:get_name()..";slot_button_"..i..";]"..
-				"tooltip[slot_button_"..i..";"..voxeldungeon.tools.getShortDescriptionOf(item).."]"
+				"tooltip[slot_button_"..i..";"..voxeldungeon.utils.itemShortDescription(item).."]"
 		else
 			local tiles = item:get_definition().tiles
 			local image = item:get_definition().inventory_image
@@ -70,7 +70,7 @@ function voxeldungeon.itemselector.showSelector(player, label, callback)
 		fs = fs.."image[7,0;1,1;voxeldungeon_ui_itemslot.png]"
 	else
 		fs = fs.."item_image_button[7,0;1,1;"..armor:get_name()..";slot_button_a;]"..
-				"tooltip[slot_button_a;"..voxeldungeon.tools.getShortDescriptionOf(armor).."]"
+				"tooltip[slot_button_a;"..voxeldungeon.utils.itemShortDescription(armor).."]"
 	end
 
 	stored_callbacks[playername] = callback

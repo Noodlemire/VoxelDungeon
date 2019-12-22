@@ -23,6 +23,20 @@ voxeldungeon.mobs = {}
 
 
 
+entitycontrol.registerTrackingList("mobs", {
+	"voxeldungeon:rat", "voxeldungeon:albino", "voxeldungeon:scout", "voxeldungeon:crab", 
+	"voxeldungeon:dirt_monster", "voxeldungeon:sand_monster", "voxeldungeon:tree_monster",
+
+	"voxeldungeon:thief", "voxeldungeon:skeleton",
+	"voxeldungeon:spider",
+
+	"voxeldungeon:bee", "voxeldungeon:mimic"
+})
+
+
+
+--mob utility functions
+
 function voxeldungeon.mobs.health(mob)
 	local obj = mob.object or mob
 	local lua = mob:get_luaentity() or mob
@@ -40,11 +54,91 @@ function voxeldungeon.mobs.damage(mob, amount, cause)
 	local lua = mob:get_luaentity() or mob
 	local orig_hp = voxeldungeon.mobs.health(mob)
 
-	obj:set_hp(orig_hp - amount)
-	if lua.health then
-		lua.health = orig_hp - amount
-		lua:check_for_death({type = cause})
+	if lua.hp then
+		mobkit.hurt(lua, amount)
+	else
+		if lua.health then
+			lua.health = orig_hp - amount
+			lua:check_for_death({type = cause})
+		end
+
+		obj:set_hp(orig_hp - amount)
 	end
+end
+
+local function register_mob(name, def)
+	def.physical = true
+	def.collide_with_objects = true
+	def.visual = def.visual or "sprite"
+	def.timeout = 0
+	def.buoyancy = def.buoyancy or 0.75
+	def.lung_capacity = def.lung_capacity or 10
+	def.view_range = def.view_range or 10
+	def.jump_height = def.jump_height or 1
+	def.max_speed = def.max_speed or 4
+	def.attack.range = 1.5
+	def.attack.full_punch_interval = def.attack.full_punch_interval or 1
+	def.armor_groups = def.armor_groups or {fleshy = 0}
+
+	def.on_step = function(self, dtime)
+		mobkit.stepfunc(self, dtime)
+		if def._on_step then def._on_step(self, dtime) end
+
+		if #voxeldungeon.utils.getPlayersInArea(self.object:get_pos(), 100) > 0 then
+			local id = entitycontrol.get_entity_id("mobs", self) or "nil"
+			self.object:set_nametag_attributes({color = "#FFFFFF", text = self.description.." #"..id
+..'\n'..self.hp.." / "..self.max_hp.." HP"})
+		else
+			self.object:set_nametag_attributes({color = "#FFFFFF", text = ""})
+		end
+	end
+
+	def.on_activate = function(self, staticdata, dtime_s)
+		mobkit.actfunc(self, staticdata, dtime_s)
+		if def._on_activate then def._on_activate(self, staticdata, dtime_s) end
+
+		minetest.after(1, function()
+			for b, _ in pairs(voxeldungeon.buffs.registered_buffs) do
+				local id = entitycontrol.get_entity_id("mobs", self)
+
+				if id then
+					local num = voxeldungeon.storage.getNum(b.."_"..id)
+
+					if num and num > 0 then
+						voxeldungeon.buffs.attach_buff(b, self, num)
+					end
+				end
+			end
+		end)
+	end
+
+	def.get_staticdata = mobkit.statfunc
+
+	def.brainfunc = def.brainfunc or voxeldungeon.mobkit.landBrain
+
+	def.on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
+		if mobkit.is_alive(self) then
+			local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)
+			self.object:set_velocity({x=hvel.x,y=2,z=hvel.z})
+			
+			mobkit.hurt(self,tool_capabilities.damage_groups.fleshy or 1)
+
+			--if attacked while not running away, or taken to low enough health, get revenge
+			if not mobkit.recall(self, "fleeing") or self.hp / self.max_hp <= 0.25 then
+				if mobkit.recall(self, "fleeing") then
+					mobkit.forget(self, "fleeing")
+					voxeldungeon.buffs.detach_buff("voxeldungeon:terror", self)
+				end
+
+				mobkit.clear_queue_high(self)
+				mobkit.hq_hunt(self, 10, puncher)
+			end
+
+			if def._on_punch then def._on_punch(self, puncher, time_from_last_punch, tool_capabilities, dir) end
+		end
+	end
+
+	minetest.register_entity("voxeldungeon:"..name, def)
 end
 
 
@@ -52,156 +146,251 @@ end
 --sewers/surface
 
 --rat: 8 hp, damage = 3, armor = 1 (albino: 15 hp, bleed)
-mobs:register_mob("voxeldungeon:rat", {
-	type = "monster",
-	passive = false,
-	attack_type = "dogfight",
-	pathfinding = true,
-	reach = 2,
-	damage = 3,
-	hp_min = 8,
-	hp_max = 8,
-	armor = 100,
+register_mob("rat", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
-	visual = "sprite",
 	textures = {"voxeldungeon_icon_mob_rat.png"},
-	makes_footstep_sound = true,
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-	jump = true,
-	floats = 1,
-	view_range = 10,
-	water_damage = 0,
-	lava_damage = 4,
-	light_damage = 0,
-	lifetimer = 20000,
+
+	description = "marsupial rat",
+	alignment = "evil",
+	max_hp = 8,
+	attack = {damage_groups = {fleshy = 3}},
+
+	_on_activate = function(self, staticdata, dtime_s)
+		if not mobkit.recall(self, "init") and math.random(30) == 1 then
+			minetest.add_entity(self.object:get_pos(), "voxeldungeon:albino")
+			self.object:remove()
+		else
+			mobkit.remember(self, "init", true)
+		end
+	end
 })
 mobs:register_egg("voxeldungeon:rat", "Marsupial Rat", "voxeldungeon_icon_mob_rat.png", 1)
 
---scout: 12 hp, damage = 4, armor = 2, drop = gold
-mobs:register_mob("voxeldungeon:scout", {
-	type = "monster",
-	passive = false,
-	attack_type = "dogfight",
-	pathfinding = true,
-	reach = 2,
-	damage = 4,
-	hp_min = 12,
-	hp_max = 12,
-	armor = 98,
+register_mob("albino", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
-	visual = "sprite",
+	textures = {"voxeldungeon_icon_mob_albino.png"},
+
+	description = "albino rat",
+	alignment = "evil",
+	max_hp = 15,
+	attack = {damage_groups = {fleshy = 3}},
+
+	_attackProc = function(self, target, damage)
+		if math.random(3) == 1 then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", target, damage)
+		end
+
+		return damage
+	end
+})
+mobs:register_egg("voxeldungeon:albino", "Albino Rat", "voxeldungeon_icon_mob_albino.png", 1)
+
+--scout: 12 hp, damage = 4, armor = 2, drop = gold
+register_mob("scout", {
+	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
 	textures = {"voxeldungeon_icon_mob_scout.png"},
-	makes_footstep_sound = true,
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-	jump = true,
-	floats = 1,
-	view_range = 10,
-	water_damage = 0,
-	lava_damage = 4,
-	light_damage = 0,
-	lifetimer = 20000,
-	drops = {{name = "voxeldungeon:gold", chance = 2, min = 30, max = 120}}
+
+	description = "gnoll scout",
+	alignment = "evil",
+	max_hp = 12,
+	attack = {damage_groups = {fleshy = 4}},
+	armor_groups = {fleshy = 1},
+	_drops = {{name = "voxeldungeon:gold", chance = 0.5, min = 30, max = 120}}
 })
 mobs:register_egg("voxeldungeon:scout", "Gnoll Scout", "voxeldungeon_icon_mob_scout.png", 1)
 
 --crab: 15 hp, damage = 5, armor = 4, moveSpeed = 2, drop = meat
-mobs:register_mob("voxeldungeon:crab", {
-	type = "monster",
-	passive = false,
-	attack_type = "dogfight",
-	pathfinding = true,
-	reach = 2,
-	damage = 5,
-	hp_min = 15,
-	hp_max = 15,
-	armor = 96,
+register_mob("crab", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
-	visual = "sprite",
 	textures = {"voxeldungeon_icon_mob_crab.png"},
-	makes_footstep_sound = true,
-	walk_velocity = 3.8,
-	run_velocity = 7.6,
-	jump = true,
-	floats = 1,
-	view_range = 10,
-	water_damage = 0,
-	lava_damage = 4,
-	light_damage = 0,
-	lifetimer = 20000,
-	drops = {{name = "voxeldungeon:mystery_meat", chance = 6, min = 1, max = 1}}
+
+	description = "sewer crab",
+	alignment = "evil",
+	max_hp = 15,
+	attack = {damage_groups = {fleshy = 5}},
+	armor_groups = {fleshy = 2},
+	max_speed = 8,
+	_drops = {{name = "voxeldungeon:mystery_meat", chance = 0.167, min = 1, max = 1}}
 })
 mobs:register_egg("voxeldungeon:crab", "Sewer Crab", "voxeldungeon_icon_mob_crab.png", 1)
 
-entitycontrol.override_entity("mobs_monster:dirt_monster", {
-	hp_max = 10,
-	hp_min = 10,
-
-	damage = 2,
-
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-
-	lifetimer = 20000,
-
+register_mob("dirt_monster", {
+	visual = "mesh",
 	mesh = "mobs_stone_monster.b3d",
-	collisionbox = {-0.4, -0.5, -0.4, 0.4, 1.3, 0.4},
+	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
+	textures = {"mobs_dirt_monster.png"},
+
+	description = "dirt monster",
+	alignment = "evil",
+	max_hp = 10,
+	attack = {damage_groups = {fleshy = 2}},
+	_drops = {{name = "default:dirt", chance = 0.667, min = 1, max = 2}},
+
+	animation = {
+		["stand"] = {range = {x = 0, y = 14}, speed = 15, loop = true},
+		["walk"] = {range = {x = 15, y = 38}, speed = 100, loop = true},
+		["punch"] = {range = {x = 40, y = 63}, speed = 15, loop = false},
+	},
+	sounds = {["charge"] = "mobs_dirtmonster"}
 })
+mobs:register_egg("voxeldungeon:dirt_monster", "Dirt Monster", "default_dirt.png", 1)
 
-entitycontrol.override_entity("mobs_monster:sand_monster", {
-	hp_max = 12,
-	hp_min = 12,
-
-	damage = 1,
-
-	walk_velocity = 3,
-	run_velocity = 5.5,
-
-	lifetimer = 20000,
-
+register_mob("sand_monster", {
+	visual = "mesh",
 	mesh = "mobs_sand_monster.b3d",
-	collisionbox = {-0.4, -0.5, -0.4, 0.4, 1.3, 0.4},
+	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
+	textures = {"mobs_sand_monster.png"},
+
+	description = "sand monster",
+	alignment = "evil",
+	max_hp = 12,
+	attack = {damage_groups = {fleshy = 2}},
+	_drops = {{name = "default:desert_sand", chance = 1, min = 3, max = 5}},
+
+	animation = {
+		["stand"] = {range = {x = 0, y = 39}, speed = 15, loop = true},
+		["walk"] = {range = {x = 41, y = 72}, speed = 100, loop = true},
+		["punch"] = {range = {x = 74, y = 105}, speed = 15, loop = false},
+	},
+	sounds = {["charge"] = "mobs_sandmonster"}
 })
+mobs:register_egg("voxeldungeon:sand_monster", "Sand Monster", "default_desert_sand.png", 1)
 
-entitycontrol.override_entity("mobs_monster:tree_monster", {
-	hp_max = 12,
-	hp_min = 12,
+register_mob("tree_monster", {
+	visual = "mesh",
+	mesh = "mobs_tree_monster.b3d",
+	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
+	textures = {"mobs_tree_monster.png"},
 
-	damage = 2,
+	description = "tree monster",
+	alignment = "evil",
+	max_hp = 12,
+	attack = {damage_groups = {fleshy = 2}},
+	_drops = {
+		{name = "default:stick", chance = 0.667, min = 1, max = 2},
+		{name = "default:sapling", chance = 0.333, min = 1, max = 2},
+		{name = "default:junglesapling", chance = 0.167, min = 1, max = 2},
+		{name = "default:apple", chance = 0.25, min = 1, max = 2},
+	},
 
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-
-	lifetimer = 20000,
-
-	mesh = "mobs_stone_monster.b3d",
-	collisionbox = {-0.4, -0.5, -0.4, 0.4, 1.4, 0.4},
+	animation = {
+		["stand"] = {range = {x = 0, y = 24}, speed = 15, loop = true},
+		["walk"] = {range = {x = 25, y = 47}, speed = 100, loop = true},
+		["punch"] = {range = {x = 48, y = 62}, speed = 15, loop = false},
+	},
+	sounds = {["charge"] = "mobs_treemonster"}
 })
+mobs:register_egg("voxeldungeon:tree_monster", "Tree Monster", "default_wood.png", 1)
 
 
 
 --prisons
 
 --thief: 20 hp, damage = 4, armor = 3, attackSpeed = 2, steals, drops gold while running (bandit: blinds when stealing)
+register_mob("thief", {
+	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
+	textures = {"voxeldungeon_icon_mob_thief.png"},
+
+	description = "crazy thief",
+	alignment = "evil",
+	max_hp = 20,
+	attack = {damage_groups = {fleshy = 4}},
+	armor_groups = {fleshy = 1},
+
+	_steal = function(self, player) 
+		local item = voxeldungeon.utils.randomItem(player:get_inventory())
+
+		if item then
+			voxeldungeon.glog.w("The crazy thief stole "..voxeldungeon.utils.itemShortDescription(item).." from you!")
+			voxeldungeon.utils.take_item(player, item)
+
+			item:set_count(1)
+			mobkit.remember(self, "stolen", item:to_string())
+
+			return true
+		else
+			return false
+		end
+	end,
+
+	_attackProc = function(self, target, damage)
+		local def = minetest.registered_entities[self.name]
+
+		if not mobkit.recall(self, "stolen") and target:is_player() and self._steal(self, target) then
+			voxeldungeon.mobkit.runfrom(self, target)
+		end
+
+		return damage
+	end,
+
+	_on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
+		if mobkit.recall(self, "fleeing") then
+			minetest.add_item(self.object:get_pos(), ItemStack("voxeldungeon:gold"))
+		end
+	end,
+
+	_on_death = function(self)
+		local item = mobkit.recall(self, "stolen")
+		if item then
+			minetest.add_item(self.object:get_pos(), ItemStack(item))
+		end
+	end
+})
+mobs:register_egg("voxeldungeon:thief", "Crazy Thief", "voxeldungeon_icon_mob_thief.png", 1)
 
 --swarm: 80 hp, damage = 2, armor = 0, flies, splits in half when hit, drop = potion of healing
 
 --skeleton: 25 hp, damage = 6, armor = 5, bone explosion on death, drop = weapon
+register_mob("skeleton", {
+	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
+	textures = {"voxeldungeon_icon_mob_skeleton.png"},
+
+	description = "skeleton",
+	alignment = "evil",
+	max_hp = 25,
+	attack = {damage_groups = {fleshy = 6}},
+	armor_groups = {fleshy = 3},
+	_drops = {{name = voxeldungeon.generator.randomWeapon, chance = 0.167, min = 1, max = 1}},
+
+	_on_death = function(self)
+		local pos = self.object:get_pos()
+
+		local ents = entitycontrol.getEntitiesInArea("mobs", pos, 1.5, false)
+		for _, ent in ipairs(ents) do
+			voxeldungeon.mobs.damage(ent, 6, "bone explosion")
+		end
+
+		local players = voxeldungeon.utils.getPlayersInArea(pos, 1.5)
+		for _, plr in ipairs(players) do
+			voxeldungeon.mobs.damage(plr, 6, "bone explosion")
+		end
+	end,
+})
+mobs:register_egg("voxeldungeon:skeleton", "Skeleton", "voxeldungeon_icon_mob_skeleton.png", 1)
 
 --shaman: 18 hp, damage = 4, armor = 4, lightning ranged attack with 7 magic damage, drop = scroll
 
-entitycontrol.override_entity("mobs_monster:spider", {
-	hp_max = 20,
-	hp_min = 20,
+register_mob("spider", {
+	collisionbox = {-0.8, -0.5, -0.8, 0.8, 0, 0.8},
+	visual = "mesh",
+	mesh = "mobs_spider.b3d",
+	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
+	textures = {"mobs_spider_grey.png"},
 
-	damage = 5,
+	description = "spider",
+	alignment = "evil",
+	max_hp = 20,
+	attack = {damage_groups = {fleshy = 5}},
+	_drops = {{name = "farming:string", chance = 0.667, min = 1, max = 2}},
 
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-
-	lifetimer = 20000,
+	animation = {
+		["stand"] = {range = {x = 0, y = 0}, speed = 15, loop = true},
+		["walk"] = {range = {x = 1, y = 21}, speed = 100, loop = true},
+		["punch"] = {range = {x = 25, y = 45}, speed = 15, loop = false},
+	},
+	sounds = {["charge"] = "mobs_spider"}
 })
+mobs:register_egg("voxeldungeon:spider", "Spider", "mobs_cobweb.png", 1)
 
 
 
@@ -370,99 +559,62 @@ entitycontrol.override_entity("mobs_monster:fireball", {
 
 --special mobs, with abnormal spawn conditions
 
-mobs:register_mob("voxeldungeon:bee", {
-	type = "monster",
-	passive = false,
-	attack_type = "dogfight",
-	pathfinding = true,
-	reach = 2,
-	damage = 1,
-	hp_min = 1,
-	hp_max = 1,
-	armor = 100,
+register_mob("bee", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
-	visual = "sprite",
 	textures = {"voxeldungeon_icon_mob_bee.png"},
-	makes_footstep_sound = true,
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-	jump = true,
-	floats = 1,
-	view_range = 10,
-	water_damage = 0,
-	lava_damage = 4,
-	light_damage = 0,
-	lifetimer = 20000,
-	fly = true,
-	attack_monsters = true,
-	attack_animals = true,
-	attack_npcs = true,
-	attack_players = true,
-	attack_chance = 0,
 
-	on_spawn = function(self)
-		local pos = self.object:get_pos()
-		local level = voxeldungeon.utils.getDepth(pos)
+	description = "golden bee",
+	max_hp = 1,
+	attack = {damage_groups = {fleshy = 1}},
+
+	--brainfunc = voxeldungeon.mobkit.flyBrain,
+
+	_on_activate = function(self, staticdata, dtime_s)
+		local level = voxeldungeon.utils.getDepth(self.object:get_pos())
 		local HT = (2 + level) * 4
 
-		self.hp_max = HT
-		self.health = HT
+		self.max_hp = HT
 
-		self.damage = math.floor(HT) / 7
+		if not mobkit.recall(self, "init") then
+			self.hp = HT
+			mobkit.remember(self, "init", true)
+		end
 
-		--self.home = pos
-
-		self.object:set_properties(self)
-
-		return true
+		self.attack.damage_groups.fleshy = math.floor(HT / 7)
 	end,
 })
 
-mobs:register_mob("voxeldungeon:mimic", {
-	type = "monster",
-	passive = false,
-	attack_type = "dogfight",
-	pathfinding = true,
-	reach = 2,
-	damage = 1,
-	hp_min = 1,
-	hp_max = 1,
-	armor = 100,
+register_mob("mimic", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
-	visual = "sprite",
 	textures = {"voxeldungeon_icon_mob_mimic.png"},
-	makes_footstep_sound = true,
-	walk_velocity = 1.9,
-	run_velocity = 3.8,
-	jump = true,
-	view_range = 10,
-	water_damage = 0,
-	lava_damage = 4,
-	light_damage = 0,
-	lifetimer = 20000,
 
-	on_spawn = function(self)
+	description = "mimic",
+	alignment = "evil",
+	max_hp = 1,
+	attack = {damage_groups = {fleshy = 1}},
+
+	_on_activate = function(self, staticdata, dtime_s)
 		local level = voxeldungeon.utils.getDepth(self.object:get_pos())
 		local HT = (3 + level) * 4
 
-		self.hp_max = HT
-		self.health = HT
+		self.max_hp = HT
 
-		self.damage = math.floor(HT) / 7
+		if not mobkit.recall(self, "init") then
+			self.hp = HT
+			mobkit.remember(self, "init", true)
+		end
 
-		self.object:set_properties(self)
-
-		return true
+		self.attack.damage_groups.fleshy = math.floor(HT / 7)
 	end,
 
-	on_die = function(self, pos)
-		self.object:remove()
+	_on_death = function(self)
+		local pos = self.object:get_pos()
 		local tier = voxeldungeon.utils.getChapter(pos)
 
 		for i = 1, math.random(6, 12) do
 			minetest.add_item(pos, voxeldungeon.generator.random(tier))
 		end
-	end,
+	end
 })
 mobs:register_egg("voxeldungeon:mimic", "Mimic", "voxeldungeon_node_chest_icon.png", 1)
 
@@ -520,8 +672,8 @@ local function register_spawning(depth, valid_ground, mobTable)
 				end
 			end
 
-			--mobs cannot spawn in protected areas when enabled
-			if not spawn_protected and minetest.is_protected(pos, "") then
+			--mobs cannot spawn in protected areas
+			if minetest.is_protected(pos, "") then
 				return
 			end
 
@@ -531,26 +683,28 @@ local function register_spawning(depth, valid_ground, mobTable)
 end
 
 register_spawning(nil, voxeldungeon.utils.surface_valid_ground, {
-	["mobs_monster:dirt_monster"] = 5,
-	["mobs_monster:sand_monster"] = 3,
-	["mobs_monster:tree_monster"] = 3,
-	["voxeldungeon:rat"] = 1
+	["voxeldungeon:dirt_monster"] = 5,
+	["voxeldungeon:sand_monster"] = 3,
+	["voxeldungeon:tree_monster"] = 3,
+	["voxeldungeon:rat"] = 1,
 })
 
 register_spawning(1, voxeldungeon.utils.sewers_valid_ground, {
-	["mobs_monster:dirt_monster"] = 2,
-	["mobs_monster:sand_monster"] = 1,
+	["voxeldungeon:dirt_monster"] = 2,
+	["voxeldungeon:sand_monster"] = 1,
 	["voxeldungeon:rat"] = 10,
 })
 
 register_spawning(3, voxeldungeon.utils.sewers_valid_ground, {
-	["mobs_monster:dirt_monster"] = 1,
+	["voxeldungeon:sand_monster"] = 1,
 	["voxeldungeon:rat"] = 5,
 	["voxeldungeon:scout"] = 6,
 })
 
 register_spawning(5, voxeldungeon.utils.sewers_valid_ground, {
-	["voxeldungeon:rat"] = 1,
-	["voxeldungeon:scout"] = 2,
-	["voxeldungeon:crab"] = 3,
+	["voxeldungeon:rat"] = 2,
+	["voxeldungeon:scout"] = 6,
+	["voxeldungeon:crab"] = 9,
+	["voxeldungeon:thief"] = 1,
+	["voxeldungeon:skeleton"] = 1,
 })

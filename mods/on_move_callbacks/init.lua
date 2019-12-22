@@ -31,18 +31,26 @@ minetest.register_globalstep(function()
 	for i = 1, entitycontrol.count_entities() do
 		local ent = entitycontrol.get_entity(i)
 		
-		if ent and ent:get_pos() and not on_move_callbacks.entitylastpos[i] then
-			on_move_callbacks.entitylastpos[i] = vector.round(ent:get_pos())
-		elseif ent and ent:get_pos() then
-			local new = vector.round(ent:get_pos())
-		
-			if not vector.equals(on_move_callbacks.entitylastpos[i], new) then
-				on_move_callbacks.entitylastpos[i] = new
+		if entitycontrol.isAlive(i) then
+			local pos = vector.round(ent:get_pos())
+
+			local collisionbox = minetest.registered_entities[ent:get_luaentity().name].collisionbox or {[2] = 0}
+
+			pos.y = pos.y + collisionbox[2]
+
+			if not on_move_callbacks.entitylastpos[i] then
+				on_move_callbacks.entitylastpos[i] = pos
+			else
+				local new = pos
 			
-				if not objs[new] then
-					objs[new] = {}
+				if on_move_callbacks.entitylastpos[i] and not vector.equals(on_move_callbacks.entitylastpos[i], new) then
+					on_move_callbacks.entitylastpos[i] = new
+				
+					if not objs[new] then
+						objs[new] = {}
+					end
+					table.insert(objs[new], ent)
 				end
-				table.insert(objs[new], ent)
 			end
 		end
 	end

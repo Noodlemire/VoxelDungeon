@@ -46,4 +46,13 @@ trash(
 	"cannons:ball_wood_stack_1", "cannons:ball_wood_stack_2", "cannons:ball_wood_stack_3", "cannons:ball_wood_stack_4", "cannons:ball_wood_stack_5",
 	"cannons:ball_stone_stack_1", "cannons:ball_stone_stack_2", "cannons:ball_stone_stack_3", "cannons:ball_stone_stack_4", "cannons:ball_stone_stack_5",
 	"cannons:ball_steel_stack_1", "cannons:ball_steel_stack_2", "cannons:ball_steel_stack_3", "cannons:ball_steel_stack_4", "cannons:ball_steel_stack_5",
-	"cannons:cannon_bronze", "cannons:ship_stand_with_cannon_bronze", "cannons:wood_stand_with_cannon_bronze", "cannons:gunpowder")
+	"cannons:cannon_bronze", "cannons:ship_stand_with_cannon_bronze", "cannons:wood_stand_with_cannon_bronze", "cannons:gunpowder",
+
+	--Various spawn eggs for mobs_redo versions of mobs
+	"mobs_monster:dirt_monster", "mobs_monster:sand_monster", "mobs_monster:spider", "mobs_monster:tree_monster")
+
+--Mobs from mobs_monster which have been remade using Mobkit
+entitycontrol.unregister_entity("mobs_monster:dirt_monster")
+entitycontrol.unregister_entity("mobs_monster:sand_monster")
+entitycontrol.unregister_entity("mobs_monster:spider")
+entitycontrol.unregister_entity("mobs_monster:tree_monster")

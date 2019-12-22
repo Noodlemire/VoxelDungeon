@@ -4,19 +4,22 @@
 __builtin:item
 
 #Monsters (mobs_redo)
-mobs_monster:dirt_monster
+voxeldungeon:dirt_monster
 mobs_monster:dungeon_master
 mobs_monster:lava_flan
 mobs_monster:mese_monster
 mobs_monster:oerkki
-mobs_monster:sand_monster
-mobs_monster:spider
+voxeldungeon:sand_monster
+voxeldungeon:spider
 mobs_monster:stone_monster
-mobs_monster:tree_monster
+voxeldungeon:tree_monster
 
 #Mobs (voxeldungeon)
 voxeldungeon:rat
+voxeldungeon:albino
 voxeldungeon:scout
 voxeldungeon:crab
+voxeldungeon:thief
+voxeldungeon:skeleton
 voxeldungeon:bee
 voxeldungeon:mimic

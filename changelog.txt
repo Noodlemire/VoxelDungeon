@@ -56,3 +56,61 @@ Alpha 1.1.0:
 		Added some textures of dirt and snow from Remixed Dungeon
 		Added silver sand texture, based on the sand texture from Sprouted Pixel Dungeon
 		Added new sign textures from Pixel Dungeon (only the Sewers one)
+
+Alpha 1.2.0:
+	Saving:
+		Switched saving method from writing and reading .txt files to using minetest.get_mod_storage().
+		As a result, old save files are worthless and can be deleted. 
+		Also, strength and max HP upgrades gained in previous worlds will be lost.
+		On the bright side, limited drops will also be reset, so you can get those upgrades back from new chests.
+		Blobs now save and persist after server shutdown
+		Player buffs now persist after logging off, and entity buffs now persist after despawning
+
+	Mobkit and Mobs:
+		New mod added, made by TheTermos
+		Mobs_redo will be kept because of its spawn egg function.
+		All the previous mobs have been replaced by replicas that were registered using mobkit instead of mobs_redo
+		Note that older worlds will be filled with lots of unknown entities if loaded with this version of the game.
+		Mobs from mobkit now show their name and remaining hp when in sight of a player
+
+	New Buffs:
+		Amok: Causes mobs to attack each other
+		Blindness: Players have a nearly opaque black filter over their screen and mobs have their vision radius set to 2
+		Haste: Grants triple movement speed
+		Herbal Armor: As long as the player with this stands still, it absorbs all damage until it runs out.
+		Immune to Gases: Harmful gases have no effect on you while this is active
+		Levitating: Sets your gravity to 0 and makes you immune to the Rooted debuff
+		Mind Vision: You can see enemy nametags through walls. Various AOE scrolls also work through walls if the reader has this buff.
+		Terror: Causes mobs to flee from whoever infliced it
+		Weakness: Players temporarily lose 2 points of strength
+
+	Potion and Scroll Effect Implementations:
+		Potion of Haste: When drank, grants haste for 20 seconds
+		Potion of Levitation: When drank, grants levitation for 20 seconds
+		Potion of Mind Vision: When drank, grants mind vision 20 seconds.
+		Potion of Purification: When drank, grants immunity to gases 20 seconds. When shattered, it erases nearby gases.
+		Scroll of Terror: When read, all nearby mobs become terrified of the reader for 10 seconds.
+		Scroll of Rage: When read, inflicts amok upon nearby mobs. Mobs that are farther away and/or behind walls will be lured to your location.
+		Scroll of Psionic Blast: When read, nearby mobs and players are severely damaged or killed, and the player takes some self damage.
+			Survivors of the blast are blinded for 10 seconds and weakened for 100 seconds. Self damage is reduced if the blast hits many.
+
+	Misc:
+		Strength bonus is now 0.5 damage per excess strength, down from 1
+		removed the mod give_initial_stuff, Voxel Dungeon's core mod now handles giving out initial stuff. Initial stuff itself is unchanged.
+		New plant: Earthroot, grant Herbal Armor equal to the player's max hp.
+		More blob optimization
+		Sources of toxic gas now create triple the amount, to somewhat help account for the fact that blobs decay faster when spreading in 3 dimentions
+
+	Fixed:
+		The starting cloth armor having no description until it's upgraded
+		Some cases where the whole buff hud would disappear (despite any presense of lingering buffs) until a new buff is added
+		Teleportation sometimes teleporting the target into solid nodes, and many times not at all.
+		Herbal Healing failing to replenish itself properly if the player tries to step onto a second sungrass while the first is active
+		Potions never doing anything when shattered until the world has been reloaded at least once.
+		Mobs needing to visually sink partially into the ground in order to work properly with on_move_callbacks
+
+	Visual:
+		Various buffs now say something when they're first attached.
+		Potions that don't do anything when shattered now only tell nearby players about it, not everyone on the server
+		There are now messages to players when they are teleported, and when a player's teleportation fails.
+		Mossy Cobblestone is no longer brighter than normal cobblestone

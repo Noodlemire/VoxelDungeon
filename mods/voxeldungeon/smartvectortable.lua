@@ -1,4 +1,4 @@
---[[
+--[[ 
 Voxel Dungeon
 Copyright (C) 2019 Noodlemire
 
@@ -19,6 +19,50 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
+local function lessThan(a, b)
+	if a.x < b.x then
+		return true
+	elseif a.x == b.x then
+		if a.y < b.y then
+			return true
+		elseif a.y == b.y then
+			if a.z < b.z then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+local function binaryInsert(svt, obj, left, right)
+	left = left or 1
+	right = right or svt.size()
+
+	if left < right then
+		local mid = math.floor((left + right) / 2)
+
+		if vector.equals(obj.k, svt.getVector(mid)) then
+			svt.table[mid] = obj
+		elseif lessThan(obj.k, svt.getVector(mid)) then
+			return binaryInsert(svt, obj, left, mid - 1)
+		else 
+			return binaryInsert(svt, obj, mid + 1, right)
+		end
+	else
+		local ind = left
+		if lessThan(svt.getVector(left), obj.k) then
+			ind = ind + 1
+		end
+
+		table.insert(svt.table, ind, obj)
+
+		for i = 1, svt.size() do
+			local v = svt.getVector(i)
+		end
+	end
+end
+
 function voxeldungeon.smartVectorTable()
 	local svt = {}
 
@@ -32,7 +76,19 @@ function voxeldungeon.smartVectorTable()
 			end
 		end
 
-		table.insert(svt.table, {k = keyVect, v = value})
+		local obj = {k = keyVect, v = value}
+
+		if svt.size() == 0 then
+			table.insert(svt.table, obj)
+		elseif svt.size() == 1 then
+			if lessThan(obj.k, svt.getVector(1)) then
+				table.insert(svt.table, 1, obj)
+			else
+				table.insert(svt.table, obj)
+			end
+		else
+			binaryInsert(svt, obj)
+		end
 	end
 
 	svt.add = function(keyVect, value)
@@ -49,14 +105,22 @@ function voxeldungeon.smartVectorTable()
 		end
 	end
 
-	svt.get = function(keyVect)
-		for _, v in ipairs(svt.table) do
-			if vector.equals(keyVect, v.k) then
-				return v.v
+	svt.get = function(keyVect, left, right)
+		left = left or 1
+		right = right or svt.size()
+
+		if left <= right then
+			local mid = math.floor((left + right) / 2)
+			local midv = svt.getVector(mid)
+
+			if vector.equals(keyVect, midv) then
+				return svt.getValue(mid)
+			elseif lessThan(keyVect, midv) then
+				return svt.get(keyVect, left, mid - 1)
+			else 
+				return svt.get(keyVect, mid + 1, right)
 			end
 		end
-
-		return nil
 	end
 
 	svt.getVector = function(i)

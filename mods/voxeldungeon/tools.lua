@@ -98,16 +98,6 @@ function voxeldungeon.tools.setLevelOf(tierItem, level)
 	end
 end
 
-function voxeldungeon.tools.getShortDescriptionOf(tierItem)
-	local desc = tierItem:get_definition().description
-	local level = tierItem:get_meta():get_int("voxeldungeon:level")
-
-	local levelString = ""
-	if level > 0 then levelString = " +"..level end
-
-	return desc..levelString
-end
-
 function voxeldungeon.tools.upgrade(tierItem)
 	local level = tierItem:get_meta():get_int("voxeldungeon:level")
 	voxeldungeon.tools.setLevelOf(tierItem, level + 1)
@@ -141,7 +131,7 @@ function voxeldungeon.tools.updateDescriptionArmor(armor)
 
 	local strTip = "\n \nBe careful about equipping armor without enough strength, your movement speed will decrease."
 	
-	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.tools.getShortDescriptionOf(armor).."\n \n"..info.. 
+	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(armor).."\n \n"..info.. 
 								"\n \nThis tier-"..tier.." armor blocks "..defense.." damage and requires "..strreq..
 								" points of strength to wear properly."..strTip))
 end
@@ -149,12 +139,13 @@ end
 function voxeldungeon.tools.updateStrdiffArmor(player)
 	local playername = player:get_player_name()
 	local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
+	if not armor_inv then return end
 	local armor = armor_inv:get_stack("armor", 1)
 
 	player_monoids.speed:del_change(player, "voxeldungeon:armor_strreq_penalty")
 
 	if not armor:is_empty() then
-		local strdiff = voxeldungeon.playerhandler.playerdata[playername].STR - getStrengthRequirementOf(armor)
+		local strdiff = voxeldungeon.playerhandler.getSTR(player) - getStrengthRequirementOf(armor)
 
 		if strdiff < 0 then
 			player_monoids.speed:add_change(player, 1 / (-strdiff + 1), "voxeldungeon:armor_strreq_penalty")
@@ -178,7 +169,7 @@ function voxeldungeon.tools.register_armor(name, desc, tier, info)
 		_durabilityPerUse = (6 - tier),
 
 		on_equip = function(player, index, itemstack)
-			local strdiff = voxeldungeon.playerhandler.playerdata[player:get_player_name()].STR - getStrengthRequirementOf(itemstack)
+			local strdiff = voxeldungeon.playerhandler.getSTR(player) - getStrengthRequirementOf(itemstack)
 
 			if strdiff < 0 then
 				player_monoids.speed:add_change(player, 1 / (-strdiff + 1), "voxeldungeon:armor_strreq_penalty")
@@ -193,6 +184,7 @@ end
 
 minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
 	local playername = player:get_player_name()
+
 	if playername then
 		local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
 		local armor = armor_inv:get_stack("armor", 1)
@@ -201,14 +193,36 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 
 			damage = math.max(0, damage - defense)
 
-			player:set_hp(player:get_hp() - damage)
-
 			local wear = math.floor(65535 / (1000 / armor:get_definition()._durabilityPerUse))
 			armor:add_wear(wear)
 			armor_inv:set_stack("armor", 1, armor)
-
-			return true
 		end
+
+		local earthroot = voxeldungeon.buffs.get_buff("voxeldungeon:herbal_armor", player)
+
+		if earthroot then
+			local diff = earthroot.left() - damage
+
+			if diff >= 0 then
+				earthroot.elapsed = earthroot.elapsed + damage
+				damage = 0
+			else
+				earthroot.detach()
+				damage = -diff
+			end
+		end
+
+		player:set_hp(player:get_hp() - damage)
+
+		if hitter then
+			local def = minetest.registered_entities[hitter:get_luaentity().name]
+
+			if def._attackProc then
+				damage = def._attackProc(hitter:get_luaentity(), player, damage)
+			end
+		end
+
+		return true
 	end
 end)
 
@@ -278,7 +292,7 @@ function voxeldungeon.tools.updateDescriptionWeapon(weapon)
 	local strTip = "\n \nHaving excess strength with this weapon will let you deal bonus damage with it, "..
 			"while lacking strength will greatly reduce your attack speed."
 	
-	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.tools.getShortDescriptionOf(weapon).."\n \n"..info.. 
+	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(weapon).."\n \n"..info.. 
 								"\n \nThis tier-"..tier.." weapon deals "..damage.." damage and requires "..strreq..
 								" points of strength to wield properly."..dlyString..durString..strTip))
 end
@@ -287,7 +301,7 @@ local function weapon_on_use(itemstack, user, pointed_thing)
 	if pointed_thing.type == "object" then
 		local target = pointed_thing.ref
 		local toolcap = itemstack:get_tool_capabilities()
-		local strdiff = voxeldungeon.playerhandler.playerdata[user:get_player_name()].STR - getStrengthRequirementOf(itemstack)
+		local strdiff = voxeldungeon.playerhandler.getSTR(user) - getStrengthRequirementOf(itemstack)
 
 		toolcap.damage_groups = {fleshy = getDamageOf(itemstack) + math.max(0, strdiff)}
 		toolcap.full_punch_interval = toolcap.full_punch_interval * math.max(1, -strdiff + 1)

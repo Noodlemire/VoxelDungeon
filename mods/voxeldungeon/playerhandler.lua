@@ -32,34 +32,28 @@ local startingPlayerStats =
 
 minetest.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
-	local playerdatapath = voxeldungeon.wp..name.."stats.txt"
-	local playerdata = io.open(playerdatapath, "r")
 	voxeldungeon.playerhandler.playerdata[name] = {}
-	local data = voxeldungeon.playerhandler.playerdata[name]
-	
-	if playerdata then
-		--read all contents of file and translate them into player stats
-		
-		data.HT = playerdata:read("*n") or startingPlayerStats.HT
-		playerdata:read()
-		data.STR = playerdata:read("*n") or startingPlayerStats.STR
-		playerdata:read()
 
-		player:set_properties({hp_max = data.HT})
+	local keyHT = name.."_HT"
+	local keySTR = name.."_STR"
+
+	local playerHT = voxeldungeon.storage.getNum(keyHT)
+	local playerSTR = voxeldungeon.storage.getNum(keySTR)
+
+	if playerHT then
+		voxeldungeon.playerhandler.playerdata[name].HT = playerHT
+		player:set_properties({hp_max = playerHT})
 	else
-		--create file because it doesn't exist yet
-
-		playerdata = io.open(playerdatapath, "w")
-		
-		data.HT = startingPlayerStats.HT
-		data.STR = startingPlayerStats.STR
-
-		for _, v in pairs(data) do
-			playerdata:write(v..'\n')
-		end
+		voxeldungeon.playerhandler.playerdata[name].HT = startingPlayerStats.HT
+		voxeldungeon.storage.put(keyHT, startingPlayerStats.HT)
 	end
 
-	io.close(playerdata)
+	if playerSTR then
+		voxeldungeon.playerhandler.playerdata[name].STR = playerSTR
+	else
+		voxeldungeon.playerhandler.playerdata[name].STR = startingPlayerStats.STR
+		voxeldungeon.storage.put(keySTR, startingPlayerStats.STR)
+	end
 
 	voxeldungeon.playerhandler.tempdata[name] = 
 	{
@@ -69,15 +63,12 @@ end)
 
 local function leaveplayer(player)
 	local name = player:get_player_name()
-	local playerdatapath = voxeldungeon.wp..name.."stats.txt"
-	local playerdata = io.open(playerdatapath, "w")
-	local data = voxeldungeon.playerhandler.playerdata[name]
 
-	for _, v in pairs(data) do
-		playerdata:write(v..'\n')
-	end
+	local keyHT = name.."_HT"
+	local keySTR = name.."_STR"
 
-	io.close(playerdata)
+	voxeldungeon.storage.put(keyHT, voxeldungeon.playerhandler.playerdata[name].HT)
+	voxeldungeon.storage.put(keySTR, voxeldungeon.playerhandler.playerdata[name].STR)
 end
 
 minetest.register_on_leaveplayer(function(player)
@@ -111,6 +102,16 @@ end
 
 function voxeldungeon.playerhandler.changeSTR(player, change)
 	voxeldungeon.playerhandler.setSTR(player, voxeldungeon.playerhandler.playerdata[player:get_player_name()].STR + change)
+end
+
+function voxeldungeon.playerhandler.getSTR(player)
+	local STR = voxeldungeon.playerhandler.playerdata[player:get_player_name()].STR
+
+	if voxeldungeon.buffs.get_buff("voxeldungeon:weakness", player) then
+		STR = STR - 2
+	end
+
+	return STR
 end
 
 minetest.register_chatcommand("mystats", {
@@ -166,3 +167,16 @@ function voxeldungeon.playerhandler.halt(player)
 		obj:remove()
 	end)
 end
+
+
+
+--Give Initial Stuff
+minetest.register_on_newplayer(function(player)
+	local inv = player:get_inventory()
+
+	inv:add_item("main", ItemStack("voxeldungeon:ration"))
+
+	local armor = ItemStack("voxeldungeon:armor_cloth")
+	voxeldungeon.tools.updateDescriptionArmor(armor)
+	inv:add_item("main", armor)
+end)

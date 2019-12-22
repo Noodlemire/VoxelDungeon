@@ -36,7 +36,7 @@ local potion_defs =
 		desc = "Toxic Gas\n \nUncorking or shattering this pressurized glass will cause its contents to explode into a deadly cloud of toxic green gas. You might choose to fling this potion at distant enemies instead of uncorking it by hand.",
 
 		shatter = function(pos)
-			voxeldungeon.blobs.seed("toxicgas", pos, 1000)
+			voxeldungeon.blobs.seed("toxicgas", pos, 3000)
 		end
 	},
 	{
@@ -87,11 +87,23 @@ local potion_defs =
 	},
 	{
 		name = "levitation",
-		desc = "Levitation",
+		desc = "Levitation\n \nDrinking this curious liquid will cause you to hover in the air, able to drift effortlessly over traps and pits. However, try not to jump into open air, as levitation offers little to no control over your vertical position.",
+
+		drink = function(itemstack, user, pointed_thing)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:levitating", user, 20)
+
+			return voxeldungeon.utils.take_item(user, itemstack)
+		end
 	},
 	{
 		name = "mindvision",
-		desc = "Mind Vision",
+		desc = "Mind Vision\n \nAfter drinking this, your mind will become attuned to the psychic signature of distant creatures, enabling you to sense biological presences through walls.",
+
+		drink = function(itemstack, user, pointed_thing)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:mindvision", user, 20)
+
+			return voxeldungeon.utils.take_item(user, itemstack)
+		end
 	},
 	{
 		name = "paralyticgas",
@@ -99,68 +111,54 @@ local potion_defs =
 	},
 	{
 		name = "purification",
-		desc = "Purification",
+		desc = "Purification\n \nThis reagent will quickly neutralize all harmful gases in the area of effect. Drinking it will give you a temporary immunity to such gases.",
+
+		drink = function(itemstack, user, pointed_thing)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:gasimmunity", user, 20)
+
+			return voxeldungeon.utils.take_item(user, itemstack)
+		end,
+
+		shatter = function(pos)
+			local r = 10
+
+			for a = -r, r do
+				for b = -r, r do
+					for c = -r, r do
+						local clearPos = vector.add(pos, {x = a, y = b, z = c})
+
+						if voxeldungeon.utils.directLineOfSight(pos, clearPos) then
+							voxeldungeon.blobs.clear("voxeldungeon:blob_toxicgas", clearPos)
+						end
+					end
+				end
+			end
+
+			for _, player in ipairs(voxeldungeon.utils.getPlayersInArea(pos, r)) do
+				voxeldungeon.glog.i("The flask shatters and you feel an unnatural freshness in the air.", player)
+			end
+		end,
 	},
 	{
 		name = "haste",
-		desc = "Haste",
+		desc = "Haste\n \nDrinking this oddly sweet liquid will imbue you with tremendous energy for a short time, allowing you to run at high speeds.",
+
+		drink = function(itemstack, user, pointed_thing)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:haste", user, 20)
+
+			return voxeldungeon.utils.take_item(user, itemstack)
+		end,
 	}
 }
 
-local colors =
-{
-	{
-		name = "turquoise", 
-		desc = "Turquoise"
-	},
-	{
-		name = "crimson", 
-		desc = "Crimson"
-	},
-	{
-		name = "azure", 
-		desc = "Azure"
-	},
-	{
-		name = "jade", 
-		desc = "Jade"
-	},
-	{
-		name = "golden", 
-		desc = "Golden"
-	},
-	{
-		name = "magenta", 
-		desc = "Magenta"
-	},
-	{
-		name = "charcoal", 
-		desc = "Charcoal"
-	},
-	{
-		name = "bistre", 
-		desc = "Bistre"
-	},
-	{
-		name = "amber", 
-		desc = "Amber"
-	},
-	{
-		name = "ivory", 
-		desc = "Ivory"
-	},
-	{
-		name = "silver", 
-		desc = "Silver"
-	},
-	{
-		name = "indigo", 
-		desc = "Indigo"
-	},
-}
+local colors = {"turquoise", "crimson", "azure", "jade", "golden", "magenta", "charcoal", "bistre", "amber", "ivory", "silver", "indigo"}
+
+
 
 local function default_shatter(pos, color)
-	voxeldungeon.glog.i("The flask shatters and "..color.." liquid splashes harmlessly.")
+	for _, player in ipairs(voxeldungeon.utils.getPlayersInArea(pos, 20)) do
+		voxeldungeon.glog.i("The flask shatters and "..color.." liquid splashes harmlessly.", player)
+	end
 end
 
 local function register_potion(name, desc, color, drink, shatter)
@@ -193,30 +191,18 @@ local function register_potion(name, desc, color, drink, shatter)
 	})
 end
 
-local filePath = voxeldungeon.wp.."potiondata.txt"
-local file = io.open(filePath, "r")
-if file then
-	--read all contents of file into a table of strings
-	local contents = {}
-	for line in file:lines() do
-		table.insert(contents, line)
-	end
-	
-	for i = 1, #contents do
-		register_potion(potion_defs[i].name, potion_defs[i].desc, contents[i], potion_defs[i].drink, potion_defs[i].shatter)
-	end
+local loadColors = voxeldungeon.storage.getBool("loadedPotions")
+for k, v in ipairs(potion_defs) do
+	local color
+	local colorKey = v.name.."_color"
 
-	io.close(file)
-else
-	--create file because it doesn't exist yet
-	file = io.open(filePath, "w")
-
-	for k, v in ipairs(potion_defs) do
-		local color = table.remove(colors, math.ceil(math.random() * #colors))
-		file:write(color.name..'\n')
-
-		register_potion(v.name, v.desc, color.name, v.drink)
+	if loadColors then
+		color = voxeldungeon.storage.getStr(colorKey)
+	else
+		color = table.remove(colors, math.random(#colors))
+		voxeldungeon.storage.put(colorKey, color)
 	end
 
-	io.close(file)
+	register_potion(v.name, v.desc, color, v.drink, v.shatter)
 end
+voxeldungeon.storage.put("loadedPotions", true)

@@ -21,6 +21,8 @@ entitycontrol = {}
 
 entitycontrol.tracked_entities = {}
 local entities = {}
+local store = minetest.get_mod_storage()
+local biggestID = {}
 
 --[[
 Description:
@@ -69,14 +71,14 @@ Returns:
     Nothing
 --]]
 function entitycontrol.unregister_entity(name)
-    --Stores the current definition of the entity that has the given name
-    local entity_to_unregister = minetest.registered_entities[name]
+	--Stores the current definition of the entity that has the given name
+	local entity_to_unregister = minetest.registered_entities[name]
 
-    --If this definition does not exist, neither does the entity.
+	--If this definition does not exist, neither does the entity.
 	if not entity_to_unregister then
-        --Say so in the debug.txt
+		--Say so in the debug.txt
 		minetest.log("warning", "Item " ..name.." already does not exist, so it will not be unregistered.")
-        --And leave since there's nothing to do.
+		--And leave since there's nothing to do.
 		return
 	end
 
@@ -86,38 +88,114 @@ end
 
 
 
-function entitycontrol.isAlive(index)
-	local ent = entitycontrol.get_entity(index)
+function entitycontrol.isAlive(list, index)
+	if not index then
+		index = list
+		list = "default"
+	end
+
+	local ent = entitycontrol.get_entity(list, index)
+
+	if ent == "unloaded" then return false end
 
 	if ent and ent:get_pos() then return true end
 end
 
-function entitycontrol.getFirstEmptyIndex(index)
-	index = index or 1
-	local ent = entitycontrol.get_entity(index)
+local function directLineOfSight(a, b)
+	local steps = vector.distance(a, b)
 
-	if index > entitycontrol.count_entities() then
+	for i = 0, steps do
+		local c
+
+		if steps > 0 then
+			c = vector.round({
+				x = a.x + (b.x - a.x) * (i / steps),
+				y = a.y + (b.y - a.y) * (i / steps),
+				z = a.z + (b.z - a.z) * (i / steps),
+			})
+		else
+			c = vector.round(a)
+		end
+
+		if voxeldungeon.utils.solid(c) then
+			return false
+		end
+	end
+
+	return true
+end
+
+function entitycontrol.getEntitiesInArea(list, pos, radius, xray)
+	if xray == nil then
+		xray = radius
+		radius = pos
+		pos = list
+		list = "default"
+	end
+
+	local ents = {}
+
+	for i = 1, entitycontrol.count_entities(list) do
+		local ent = entitycontrol.get_entity(list, i)
+
+		if entitycontrol.isAlive(list, i) and vector.distance(pos, ent:get_pos()) <= radius and (xray or directLineOfSight(pos, ent:get_pos())) then
+			table.insert(ents, ent)
+		end
+	end
+
+	return ents
+end
+
+function entitycontrol.getFirstEmptyIndex(list, index)
+	if not index then
+		if not list or type(list) == "string" then
+			index = 1
+		else
+			index = list
+		end
+
+		list = "default"
+	end
+
+	local ent = entitycontrol.get_entity(list, index)
+
+	if index > entitycontrol.count_entities(list) then
 		return nil
-	elseif entitycontrol.isAlive(index) then
-		return entitycontrol.getFirstEmptyIndex(index + 1)
+	--elseif ent == "unloaded" or entitycontrol.isAlive(list, index) then
+	elseif ent then
+		return entitycontrol.getFirstEmptyIndex(list, index + 1)
 	else
 		return index
 	end
 end
 
-local function insertEntity(obj)
-	local i = entitycontrol.getFirstEmptyIndex() or entitycontrol.count_entities() + 1
+local function insertEntity(list, obj)
+	if not obj then
+		obj = list
+		list = "default"
+	end
 
-	entities[i] = obj
+	local i = entitycontrol.getFirstEmptyIndex(list) or entitycontrol.count_entities(list) + 1
+
+	biggestID[list] = math.max(biggestID[list] or 0, i)
+
+	entities[list][i] = obj
 	return i
 end
 
-function entitycontrol.count_entities()
-	return #entities
+function entitycontrol.count_entities(list)
+	list = list or "default"
+
+	return biggestID[list] or 0
 end
 
-function entitycontrol.is_entity_tracked(name)
-	for _, e in ipairs(entitycontrol.tracked_entities) do
+function entitycontrol.is_entity_tracked(list, name)
+	if not name then
+		name = list
+		list = "default"
+	end
+
+	for _, e in ipairs(entitycontrol.tracked_entities[list]) do
 		if e == name then
 			return true
 		end
@@ -127,47 +205,137 @@ function entitycontrol.is_entity_tracked(name)
 end
 
 --Try to find an entity at the given index.
-function entitycontrol.get_entity(index)
-	return entities[index]
+function entitycontrol.get_entity(list, index)
+	if not index then
+		index = list
+		list = "default"
+	end
+
+	return entities[list][index]
 end
 
 --Either find id of requested entity or make a new spot, requires the actual object
-function entitycontrol.get_entity_id(entity)
-	local id = (entity:get_luaentity() or entity).entitycontrol_id
-	return id
+function entitycontrol.get_entity_id(list, entity)
+	if not entity then
+		entity = list
+		list = "default"
+	end
+
+	if not entity.entitycontrol_id --[[and pcall(entity:get_luaentity())--]] then
+		entity = entity:get_luaentity()
+	end
+
+	if not entity or not entity.entitycontrol_id then return nil end
+
+	return entity.entitycontrol_id[list]
+end
+
+function entitycontrol.registerTrackingList(name, entityList)
+	entitycontrol.tracked_entities[name] = entityList
+	entities[name] = {}
 end
 
 local filePath = minetest.get_modpath(minetest.get_current_modname()).."/config.txt"
 local file = io.open(filePath, "r")
 if file then
+	local defaultList = {}
+
 	-- read all contents of file into a table of strings
 	for line in file:lines() do
 		if line:len() > 0 and line:sub(1, 1) ~= '#' then
-			table.insert(entitycontrol.tracked_entities, line)
+			table.insert(defaultList, line)
 		end
 	end
-	
-	minetest.after(0, function()
-		for _, e in ipairs(entitycontrol.tracked_entities) do
+
+	entitycontrol.registerTrackingList("default", defaultList)
+
+	io.close()
+else
+	entitycontrol.registerTrackingList(defaultList, {})
+end
+
+
+
+local function splitstring(input, sep)
+        if not sep then
+                sep = "%s"
+        end
+
+        local t = {}
+        for str in string.gmatch(input, "([^"..sep.."]+)") do
+                table.insert(t, str)
+        end
+
+        return t
+end
+
+minetest.register_on_mods_loaded(function()
+	for list, ents in pairs(entitycontrol.tracked_entities) do
+		for _, e in ipairs(ents) do
 			if e and minetest.registered_entities[e] then
 				local ent = minetest.registered_entities[e]
 				local super_on_activate = ent.on_activate
+				local super_get_staticdata = ent.get_staticdata
 				local super_on_death = ent.on_death
 
 				entitycontrol.override_entity(e, 
 				{
 					on_activate = function(self, staticdata, dtime_s)
 						super_on_activate(self, staticdata, dtime_s)
-						local id = insertEntity(self.object)
-						self.entitycontrol_id = id
+
+						local data = minetest.deserialize(staticdata)
+
+						if data and data.entitycontrol_id then
+
+							local id = data.entitycontrol_id[list]
+								
+							entities[list][id] = self.object
+							--store:set_string(list.."_"..id, "")
+							biggestID[list] = math.max(biggestID[list] or 0, id)
+							store:set_string(list.."_"..id, "taken")
+						else
+							local id = insertEntity(list, self.object)
+
+							if not self.entitycontrol_id then self.entitycontrol_id = {} end
+							self.entitycontrol_id[list] = id
+						end
+					end,
+
+					get_staticdata = function(self)
+						local data = minetest.deserialize(super_get_staticdata(self))
+
+						if self.entitycontrol_id then
+							data.entitycontrol_id = self.entitycontrol_id
+
+							--[[for list, id in pairs(data.entitycontrol_id) do
+								entities[list][id] = "unloaded"
+								store:set_string(list.."_"..id, "unloaded")
+							end--]]
+						end
+
+						return minetest.serialize(data)
 					end,
 
 					on_death = function(self, killer)
-						entities[entitycontrol.get_entity_id(self)] = nil
+						store:set_string(list.."_"..self.entitycontrol_id[list], "")
+
+						entities[list][entitycontrol.get_entity_id(list, self)] = nil
 						super_on_death(self, killer)
 					end
 				})
 			end
 		end
-	end)
-end
+	end
+
+	local table = store:to_table()["fields"]
+
+	for k, _ in pairs(table) do
+		local split = splitstring(k, "_")
+		local list = split[1]
+		local id = tonumber(split[2])
+
+		biggestID[list] = math.max(biggestID[list] or 0, id)
+
+		entities[list][id] = entities[list][id] or "unloaded"
+	end
+end)
