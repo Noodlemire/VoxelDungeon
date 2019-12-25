@@ -164,8 +164,10 @@ local scrollChances = {
 }
 
 local seedChances = {
+	["voxeldungeon:plant_earthroot"] = 40,
 	["voxeldungeon:plant_fadeleaf"] = 40,
 	["voxeldungeon:plant_firebloom"] = 50,
+	["voxeldungeon:plant_icecap"] = 40,
 	["voxeldungeon:plant_sorrowmoss"] = 50,
 	["voxeldungeon:plant_sungrass"] = 30,
 	["voxeldungeon:plant_rotberry"] = 0,

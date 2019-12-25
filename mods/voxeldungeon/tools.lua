@@ -182,50 +182,6 @@ function voxeldungeon.tools.register_armor(name, desc, tier, info)
 	})
 end
 
-minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
-	local playername = player:get_player_name()
-
-	if playername then
-		local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
-		local armor = armor_inv:get_stack("armor", 1)
-		if not armor:is_empty() then
-			local defense = getDefenseOf(armor)
-
-			damage = math.max(0, damage - defense)
-
-			local wear = math.floor(65535 / (1000 / armor:get_definition()._durabilityPerUse))
-			armor:add_wear(wear)
-			armor_inv:set_stack("armor", 1, armor)
-		end
-
-		local earthroot = voxeldungeon.buffs.get_buff("voxeldungeon:herbal_armor", player)
-
-		if earthroot then
-			local diff = earthroot.left() - damage
-
-			if diff >= 0 then
-				earthroot.elapsed = earthroot.elapsed + damage
-				damage = 0
-			else
-				earthroot.detach()
-				damage = -diff
-			end
-		end
-
-		player:set_hp(player:get_hp() - damage)
-
-		if hitter then
-			local def = minetest.registered_entities[hitter:get_luaentity().name]
-
-			if def._attackProc then
-				damage = def._attackProc(hitter:get_luaentity(), player, damage)
-			end
-		end
-
-		return true
-	end
-end)
-
 
 
 voxeldungeon.tools.register_armor("cloth", "Cloth Armor", 1, "This lightweight armor offers basic protection.")

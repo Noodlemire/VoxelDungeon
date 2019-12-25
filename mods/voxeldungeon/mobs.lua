@@ -41,7 +41,9 @@ function voxeldungeon.mobs.health(mob)
 	local obj = mob.object or mob
 	local lua = mob:get_luaentity() or mob
 
-	if lua.health then
+	if lua.hp then
+		return lua.hp
+	elseif lua.health then
 		obj:set_hp(lua.health)
 		return lua.health
 	else
@@ -86,8 +88,17 @@ local function register_mob(name, def)
 
 		if #voxeldungeon.utils.getPlayersInArea(self.object:get_pos(), 100) > 0 then
 			local id = entitycontrol.get_entity_id("mobs", self) or "nil"
-			self.object:set_nametag_attributes({color = "#FFFFFF", text = self.description.." #"..id
-..'\n'..self.hp.." / "..self.max_hp.." HP"})
+			local nametag = self.description..'\n'..self.hp.." / "..self.max_hp.." HP"
+--[[
+			for b, _ in pairs(voxeldungeon.buffs.registered_buffs) do
+				local buff = voxeldungeon.buffs.get_buff(b, self)
+
+				if buff then
+					nametag = nametag..'\n'..b..": "..buff.left()
+				end
+			end
+--]]
+			self.object:set_nametag_attributes({color = "#FFFFFF", text = nametag})
 		else
 			self.object:set_nametag_attributes({color = "#FFFFFF", text = ""})
 		end
@@ -96,6 +107,11 @@ local function register_mob(name, def)
 	def.on_activate = function(self, staticdata, dtime_s)
 		mobkit.actfunc(self, staticdata, dtime_s)
 		if def._on_activate then def._on_activate(self, staticdata, dtime_s) end
+
+		if self.hp <= 0 then
+			self.object:remove()
+			return
+		end
 
 		minetest.after(1, function()
 			for b, _ in pairs(voxeldungeon.buffs.registered_buffs) do
@@ -117,11 +133,20 @@ local function register_mob(name, def)
 	def.brainfunc = def.brainfunc or voxeldungeon.mobkit.landBrain
 
 	def.on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
+		if voxeldungeon.playerhandler.isParalyzed(puncher) then return end
+
 		if mobkit.is_alive(self) then
-			local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)
-			self.object:set_velocity({x=hvel.x,y=2,z=hvel.z})
+
+			local damage = tool_capabilities.damage_groups.fleshy or 1
 			
-			mobkit.hurt(self,tool_capabilities.damage_groups.fleshy or 1)
+			mobkit.hurt(self, damage)
+
+			voxeldungeon.utils.on_punch_common(self.object, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+
+			if self.paralysis == 0 then
+				local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)
+				self.object:set_velocity({x=hvel.x,y=2,z=hvel.z})
+			end
 
 			--if attacked while not running away, or taken to low enough health, get revenge
 			if not mobkit.recall(self, "fleeing") or self.hp / self.max_hp <= 0.25 then
@@ -707,4 +732,22 @@ register_spawning(5, voxeldungeon.utils.sewers_valid_ground, {
 	["voxeldungeon:crab"] = 9,
 	["voxeldungeon:thief"] = 1,
 	["voxeldungeon:skeleton"] = 1,
+})
+
+register_spawning(6, voxeldungeon.utils.prisons_valid_ground, {
+	["voxeldungeon:thief"] = 3,
+	["voxeldungeon:skeleton"] = 9,
+	["voxeldungeon:spider"] = 6,
+})
+
+register_spawning(8, voxeldungeon.utils.prisons_valid_ground, {
+	["voxeldungeon:thief"] = 5,
+	["voxeldungeon:skeleton"] = 6,
+	["voxeldungeon:spider"] = 5,
+})
+
+register_spawning(10, voxeldungeon.utils.prisons_valid_ground, {
+	["voxeldungeon:thief"] = 6,
+	["voxeldungeon:skeleton"] = 5,
+	["voxeldungeon:spider"] = 1,
 })

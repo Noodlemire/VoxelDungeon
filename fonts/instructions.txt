@@ -1,0 +1,7 @@
+For those who want an extra Pixel Dungeon flavor
+
+From Minetest's main menu, go to the Settings tab, click on the "All Settings" button, and navigate to Graphics > Menus > Font Path
+
+Set the font path to the path of PixelFont.ttf
+
+This will affect all games and is entirely optional.

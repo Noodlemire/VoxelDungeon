@@ -139,8 +139,9 @@ function voxeldungeon.mobkit.landBrain(self)
 	-- vitals should be checked every step
 	mobkit.vitals(self)
 
-	local doReturn = HPChecks(self)
-	if doReturn then return end
+	if HPChecks(self) then return end
+
+	if self.paralysis and self.paralysis > 0 then return end
 
 	--decision making needn't happen every engine step
 	if mobkit.timer(self,1) then 

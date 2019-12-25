@@ -360,9 +360,9 @@ local function register_trap(name, desc, on_trigger)
 			sunlight_propogates = true,
 			walkable = false,
 			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
-			on_step = function(pos, objs)
+			_on_move_on = function(pos, obj)
 				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_wornout"})
-				on_trigger(pos, objs)
+				on_trigger(pos, obj)
 			end,
 		})
 
@@ -376,7 +376,7 @@ local function register_trap(name, desc, on_trigger)
 		minetest.register_node("voxeldungeon:trap_"..namelist[i].."_"..name.."_hidden", 
 		{
 			description = "Hidden "..desc.." Trap ("..desclist[i]..")", 
-			tiles = {"voxeldungeon_blank.png"},
+			tiles = {"blank.png"},
 			inventory_image = img,
 			wield_image = img,
 			
@@ -392,15 +392,13 @@ local function register_trap(name, desc, on_trigger)
 			walkable = false,
 			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
 
-			on_step = function(pos, objs)
-				for _, obj in ipairs(objs) do
-					if obj:is_player() then
-						voxeldungeon.glog.i("A hidden pressure plate clicks!", obj)
-					end
+			_on_move_on = function(pos, obj)
+				if obj:is_player() then
+					voxeldungeon.glog.i("A hidden pressure plate clicks!", obj)
 				end
 
 				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_wornout"})
-				on_trigger(pos, objs)
+				on_trigger(pos, obj)
 			end,
 
 			on_punch = reveal,
@@ -409,34 +407,72 @@ local function register_trap(name, desc, on_trigger)
 	end
 end
 
-register_trap("gripping", "Gripping", function(pos, objs)
-	for i = 1, #objs do
-		if objs[i] then
+register_trap("gripping", "Gripping", function(pos, obj)
+	local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
+
+	voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", obj, damage)
+	voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", obj, 10)
+	--[[for i = 1, entitycontrol.count_entities("mobs") do
+		local e = entitycontrol.get_entity("mobs", i)
+
+		if entitycontrol.isAlive("mobs", i) and vector.equals(vector.round(e:get_pos()), pos) then
 			local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
 
-			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", objs[i], damage)
-			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", objs[i], 10)
-		end 
+			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", e, damage)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", e, 10)
+		end
 	end
+
+	for _, p in ipairs(minetest.get_connected_players()) do
+		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
+			local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
+
+			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", p, damage)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", p, 10)
+		end
+	end--]]
 end)
 
-register_trap("poisondart", "Poison Dart", function(pos, objs)
-	for i = 1, #objs do
-		if objs[i] then
-			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", objs[i], 4 + math.floor(voxeldungeon.utils.getDepth(pos) / 2))
-		end 
+register_trap("paralyticgas", "Paralytic Gas", function(pos, obj)
+	voxeldungeon.blobs.seed("paralyticgas", pos, 3000)
+end)
+
+register_trap("poisondart", "Poison Dart", function(pos, obj)
+	for i = 1, entitycontrol.count_entities("mobs") do
+		local e = entitycontrol.get_entity("mobs", i)
+
+		if entitycontrol.isAlive("mobs", i) and vector.equals(vector.round(e:get_pos()), pos) then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", e, 4 + math.floor(voxeldungeon.utils.getDepth(pos) / 2))
+		end
 	end
+
+	for _, p in ipairs(minetest.get_connected_players()) do
+		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", p, 4 + math.floor(voxeldungeon.utils.getDepth(pos) / 2))
+		end
+	end
+
 	voxeldungeon.particles.burst("poison", pos, 3)
 end)
 
-register_trap("teleport", "Teleportation", function(pos, objs)
-	for i = 1, #objs do
-		voxeldungeon.utils.randomTeleport(objs[i])
+register_trap("teleport", "Teleportation", function(pos, obj)
+	for i = 1, entitycontrol.count_entities() do
+		local e = entitycontrol.get_entity(i)
+
+		if entitycontrol.isAlive(i) and vector.equals(vector.round(e:get_pos()), pos) then
+			voxeldungeon.utils.randomTeleport(e)
+		end
+	end
+
+	for _, p in ipairs(minetest.get_connected_players()) do
+		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
+			voxeldungeon.utils.randomTeleport(p)
+		end
 	end
 end)
 
-register_trap("toxicgas", "Toxic Gas", function(pos, objs)
-	voxeldungeon.blobs.seed("toxicgas", pos, 8000)
+register_trap("toxicgas", "Toxic Gas", function(pos, obj)
+	voxeldungeon.blobs.seed("toxicgas", pos, 3000)
 end)
 
 

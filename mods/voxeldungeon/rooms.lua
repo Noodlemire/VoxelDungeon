@@ -48,6 +48,10 @@ local function newRoom()
 		}
 	end
 
+	room.set = function(other)
+		
+	end
+
 	room.shift = function(a, b, c)
 		room.pos = vector.add(room.pos, {x=a, y=b, z=c})
 		room.rect.north = room.rect.north + c
@@ -169,32 +173,43 @@ end
 
 --Pathways
 --
-function voxeldungeon.rooms.tunnel(prevRoom, tunnelRoom, nextRoom, doorDir, startPoint)
-	local relStart = {
-		x = startPoint.x - prevRoom.rect.west,
-		z = startPoint.z - prevRoom.rect.south,
-	}
+function voxeldungeon.rooms.tunnel(startpos, endpos)
+	local midpos
+	if math.random(2) == 1 then
+		midpos = {
+			x = startpos.x,
+			z = endpos.z
+		}
+	else
+		midpos = {
+			x = endpos.x,
+			z = startpos.z
+		}
+	end
 
-	local midPoint
-	local endPoint
+	if startpos.x < 0 or endpos.x < 0 then
+		local x = -math.min(startpos.x, endpos.x) + 1
 
-	if doorDir == "west" then
-		midPoint = {x = relStart.x + tunnelRoom.size.x, z = relStart.z}
-	elseif doorDir == "east" then
-		midPoint = {x = relStart.x - tunnelRoom.size.x, z = relStart.z}
-	elseif doorDir == "south" then
-		midPoint = {x = relStart.x, z = relStart.z + tunnelRoom.size.z}
-	elseif doorDir == "north" then
-		midPoint = {x = relStart.x, z = relStart.z - tunnelRoom.size.z}
+		startpos.x = startpos.x + x
+		midpos.x = midpos.x + x
+		endpos.x = endpos.x + x
+	end
+
+	if startpos.z < 0 or endpos.z < 0 then
+		local z = -math.min(startpos.z, endpos.z) + 1
+
+		startpos.z = startpos.z + z
+		midpos.z = midpos.z + z
+		endpos.z = endpos.z + z
 	end
 
 	
 
 	local s = 
 	{
-		x = space.east,
+		x = math.abs(startpos.x) + math.abs(endpos.x),
 		y = 6,
-		z = space.north,
+		z = math.abs(startpos.z) + math.abs(endpos.z),
 	}
 	local d = {}
 
@@ -202,9 +217,10 @@ function voxeldungeon.rooms.tunnel(prevRoom, tunnelRoom, nextRoom, doorDir, star
 	for c = 1, s.z do
 		for b = 1, s.y do
 			for a = 1, s.x do
-				if (a >= relStart.x and a <= midPoint.x and c >= relStart.z and c <= midPoint.z) --or 
-						--(a >= midPoint.x and a <= endPoint.x and c >= midPoint.z and c <= endPoint.z) 
-then
+				if (a >= startpos.x and a <= midpos.x and c >= startpos.z and c <= midpos.z) or 
+						(a <= startpos.x and a >= midpos.x and c <= startpos.z and c >= midpos.z) or 
+						(a >= midpos.x and a <= endpos.x and c >= midpos.z and c <= endpos.z) or 
+						(a <= midpos.x and a >= endpos.x and c <= midpos.z and c >= endpos.z) then
 					if b == 1 or b == s.y then
 						d[i] = W
 					elseif b == 2 then

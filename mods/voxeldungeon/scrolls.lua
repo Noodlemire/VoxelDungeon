@@ -232,19 +232,23 @@ local runes = {"sowilo", "odal", "tiwaz", "naudiz", "gyfu", "yngvi", "berkanan",
 
 
 local function register_scroll(name, desc, rune, use)
+	local do_read = function(itemstack, user, pointed_thing)
+		if voxeldungeon.buffs.get_buff("voxeldungeon:blind", user) then
+			voxeldungeon.glog.w("You can't read a scroll while blinded.", user)
+			return
+		end
+
+		return use(itemstack, user, pointed_thing)
+	end
+
 	minetest.register_craftitem("voxeldungeon:scroll_"..name,
 	{
-		description = voxeldungeon.utils.itemDescription("Scroll of "..desc.."\n \nLeft click while holding a scroll to read it."),
+		description = voxeldungeon.utils.itemDescription("Scroll of "..desc.."\n \nRight click while holding a scroll to read it."),
 		inventory_image = "voxeldungeon_item_scroll_"..rune..".png",
 		_cornerLR = "voxeldungeon_icon_scroll_"..name..".png",
-		on_use = function(itemstack, user, pointed_thing)
-			if false and voxeldungeon.buffs.get_buff("voxeldungeon:blind", user) then
-				voxeldungeon.glog.w("You can't read a scroll while blinded.", user)
-				return
-			end
 
-			return use(itemstack, user, pointed_thing)
-		end
+		on_place = do_read,
+		on_secondary_use = do_read
 	})
 end
 

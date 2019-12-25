@@ -317,6 +317,37 @@ function voxeldungeon.utils.itemShortDescription(item)
 	end
 end
 
+function voxeldungeon.utils.on_punch_common(defender, attacker, time_from_last_punch, tool_capabilities, dir, damage)
+	local para = voxeldungeon.buffs.get_buff("voxeldungeon:paralyzed", defender)
+	local hp
+
+	if defender:is_player() then
+		hp = defender:get_hp()
+	else
+		hp = defender:get_luaentity().hp
+	end
+
+	if para and math.random(0, damage) >= math.random(0, hp) then
+		para.detach()
+
+		if defender:is_player() then
+			voxeldungeon.glog.i("The pain snapped you out of paralysis!", defender)
+		end
+
+		if attacker:is_player() then
+			local name
+
+			if defender:is_player() then
+				name = defender:get_player_name()
+			else
+				name = defender:get_luaentity().description
+			end
+
+			voxeldungeon.glog.i("The pain snapped "..name.." out of paralysis!", attacker)
+		end
+	end
+end
+
 function voxeldungeon.utils.randomChances(chanceTable)
 	local sum = voxeldungeon.utils.sumChances(chanceTable)
 	if sum == 0 then return end
@@ -375,7 +406,7 @@ function voxeldungeon.utils.randomTeleport(obj)
 		})
 
 		if obj:is_player() then
-			voxeldungeon.glog.i("In the blink of an eye, you are teleported a another location.", obj)
+			voxeldungeon.glog.i("In the blink of an eye, you are teleported another location.", obj)
 		end
 	elseif obj:is_player() then
 		voxeldungeon.glog.i("There's no enough space available for a teleportation.", obj)

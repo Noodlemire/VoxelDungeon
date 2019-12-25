@@ -112,6 +112,16 @@ voxeldungeon.particles.register_particle("grass", 1, 1.2, 1, nil, function(self,
 	self.resize(self, -0.075)
 end)
 
+voxeldungeon.particles.register_particle("paralytic", 8, 3, 0, 
+	function(self)
+		self.object:set_sprite({x = 0, y = 0}, 12, voxeldungeon.utils.randomDecimal(0.4, 0.3), false)
+	end,
+
+	function(self, lifespan)
+		self.resize(self, 0.25)
+	end, "sprite", 1, 12
+)
+
 voxeldungeon.particles.register_particle("poison", 1, 0.6, -1, nil, function(self, lifespan)
 	local timer = self._timer
 	

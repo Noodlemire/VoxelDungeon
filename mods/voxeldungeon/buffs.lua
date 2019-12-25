@@ -28,51 +28,67 @@ local entity_buffs = {}
 
 
 
-function voxeldungeon.buffs.register_buff(name, def)
-	voxeldungeon.buffs.registered_buffs[name] = def
-end
+local hud_queue = {}
 
-local function make_hud(target)
-	local i = 0
+local function queue_hud(target)
+	local pname = target:get_player_name()
 
-	for _, buff in pairs(player_buffs[target:get_player_name()]) do
-		target:hud_remove(buff.hud_image_id)
-		target:hud_remove(buff.hud_text_id)
+	if not hud_queue[pname] then
+		hud_queue[pname] = true
 
-		if not buff.detached and buff.icon then
+		local make_hud = function(player)
+			local i = 0
 
-			buff.hud_image_id = target:hud_add({
-				hud_elem_type = "image",
-				text = buff.icon,
+			for _, buff in pairs(player_buffs[player:get_player_name()]) do
+				player:hud_remove(buff.hud_image_id)
+				player:hud_remove(buff.hud_text_id)
 
-				scale = {x = 1, y = 1},
-				position = {x = 0.01, y = 0.2},
-				direction = 1,
-				alignment = {x = 1, y = 0},
-				offset = {x = 0, y = 20 * i - 1},
-				z_index = 1
-			})
+				if not buff.detached and buff.icon then
+					buff.hud_image_id = player:hud_add({
+						hud_elem_type = "image",
+						text = buff.icon,
 
-			local t = buff.description or "!!!NO TEXT FOUND!!!"
-			if buff.duration then
-				t = t..": "..buff.left(true)
+						scale = {x = 1, y = 1},
+						position = {x = 0.01, y = 0.2},
+						direction = 1,
+						alignment = {x = 1, y = 0},
+						offset = {x = 0, y = 20 * i - 1},
+						z_index = 1
+					})
+
+					local t = buff.description or "!!!NO TEXT FOUND!!!"
+					if buff.duration then
+						t = t..": "..buff.left()
+					end
+
+					buff.hud_text_id = player:hud_add({
+						hud_elem_type = "text",
+						text = t,
+						number = "0xFFFFFF",
+
+						scale = {x = 200, y = 20},
+						position = {x = 0.01, y = 0.2},
+						direction = 1,
+						alignment = {x = 1, y = 0},
+						offset = {x = 20, y = 20 * i},
+						z_index = 1
+					})
+
+					i = i + 1
+				end
 			end
 
-			buff.hud_text_id = target:hud_add({
-				hud_elem_type = "text",
-				text = t,
-				number = "0xFFFFFF",
-
-				scale = {x = 200, y = 20},
-				position = {x = 0.01, y = 0.2},
-				direction = 1,
-				alignment = {x = 1, y = 0},
-				offset = {x = 20, y = 20 * i},
-				z_index = 1
-			})
-			i = i + 1
+			hud_queue[player:get_player_name()] = false
 		end
+
+		minetest.after(0.1, make_hud, target)
 	end
+end
+
+
+
+function voxeldungeon.buffs.register_buff(name, def)
+	voxeldungeon.buffs.registered_buffs[name] = def
 end
 
 function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
@@ -95,12 +111,15 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 		buff = player_buffs[target:get_player_name()][name]
 
 		if buff then
-			if duration then
+			if duration and buff.left() ~= duration then
 				buff.duration = math.max(buff.left(), duration)
+
+				local t = buff.description or "!!!NO TEXT FOUND!!!"
+				t = t..": "..buff.left()
+				buff.target:hud_change(buff.hud_text_id, "text", t)
 			end
 
-			make_hud(target)
-			buff.on_attach(buff)
+			buff.on_attach(buff, false)
 
 			return buff
 		end
@@ -116,7 +135,7 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 					buff.duration = math.max(buff.left(), duration)
 				end
 
-				buff.on_attach(buff)
+				buff.on_attach(buff, false)
 
 				return buff
 			end
@@ -134,11 +153,16 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 	buff.do_effect = voxeldungeon.buffs.registered_buffs[name].do_effect or function() end
 	buff.on_detach = voxeldungeon.buffs.registered_buffs[name].on_detach or function() end
 
+	buff.customdata = customdata or {}
+
 	buff.action = function()
 		if type(buff.id) == "number" and entitycontrol.get_entity("mobs", buff.id) == "unloaded" then return end
 
-		if not buff.detached and buff.left() > 0 and voxeldungeon.mobs.health(buff.target) > 0 then
-			buff.do_effect(buff, customdata)
+		if not buff.detached and buff.left() > 0 and voxeldungeon.mobs.health(buff.target) > 0 and 
+				(buff.target:is_player() or entitycontrol.isAlive("mobs", buff.target)) then
+			buff.do_effect(buff)
+
+			if buff.detached then return end
 
 			if buff.autoDecrement then 
 				buff.duration = buff.duration - 1
@@ -147,7 +171,7 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 			if buff.target:is_player() then
 				if duration then
 					local t = buff.description or "!!!NO TEXT FOUND!!!"
-					t = t..": "..buff.left(true)
+					t = t..": "..buff.left()
 					buff.target:hud_change(buff.hud_text_id, "text", t)
 				end
 			end
@@ -159,17 +183,20 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 			else
 				voxeldungeon.storage.put(name.."_"..entitycontrol.get_entity_id("mobs", buff.target), buff.left())
 			end
-		else
+		elseif not buff.detached then
 			buff.detach()
 		end
 	end
 	
 	buff.detach = function()
-		buff.on_detach(buff, customdata)
+		buff.on_detach(buff)
 		buff.detached = true
 
 		if buff.target:is_player() then
-			make_hud(buff.target)
+			buff.target:hud_remove(buff.hud_image_id)
+			buff.target:hud_remove(buff.hud_text_id)
+			queue_hud(buff.target)
+
 			player_buffs[buff.id][name] = nil
 		elseif not entitycontrol.get_entity_id("mobs", buff.target) then
 			local dead_id = 0
@@ -182,17 +209,13 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 			entity_buffs[buff.id][name] = nil
 		end
 
-		voxeldungeon.storage.del(buff.id)
+		voxeldungeon.storage.del(name.."_"..buff.id)
 	end
 	
-	buff.left = function(displaying)
+	buff.left = function()
 		if not duration then return nil end
 
 		local left = buff.duration
-
-		if displaying then
-			left = left + 1
-		end
 
 		return left
 	end
@@ -204,14 +227,14 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 		buff.id = entitycontrol.get_entity_id("mobs", buff.target)
 		entity_buffs[buff.id][name] = buff
 	end
-	
-	buff.on_attach(buff, customdata)
-	if buff.detached then return end
-	buff.action()
 
 	if buff.target:is_player() then
-		make_hud(buff.target)
+		queue_hud(buff.target)
 	end
+	
+	buff.on_attach(buff, true)
+	if buff.detached then return end
+	minetest.after(1, buff.action)
 	
 	return buff
 end
@@ -274,15 +297,15 @@ voxeldungeon.buffs.register_buff("voxeldungeon:bleeding", {
 	description = "Bleeding", 
 	icon = "voxeldungeon_buff_bleeding.png",
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.w("You are bleeding!", buff.target)
 		end
 	end,
 
-	do_effect = function(buff) 
+	do_effect = function(buff)
 		voxeldungeon.mobs.damage(buff.target, buff.left(), "bleeding")
-		buff.duration = buff.buff.duration + math.random(0, math.ceil(buff.left() / 2))
+		buff.duration = buff.duration - math.random(0, math.ceil(buff.left() / 2))
 	end
 })
 
@@ -293,8 +316,8 @@ voxeldungeon.buffs.register_buff("voxeldungeon:blind", {
 
 	--See mobkit.lua/chooseEnemy
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.w("You are blinded!", buff.target)
 
 			if not buff.blind_hud_id then
@@ -321,17 +344,143 @@ voxeldungeon.buffs.register_buff("voxeldungeon:crippled", {
 	icon = "voxeldungeon_buff_crippled.png",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
+	on_attach = function(buff, first) 
+		if not first then return end
+
 		if buff.target:is_player() then
 			voxeldungeon.glog.w("You are crippled!", buff.target)
 			player_monoids.speed:add_change(buff.target, 0.5, "voxeldungeon:crippled")
+		else
+			buff.target:get_luaentity().max_speed = buff.target:get_luaentity().max_speed / 2
 		end
 	end,
 
 	on_detach = function(buff) 
 		if buff.target:is_player() then
 			player_monoids.speed:del_change(buff.target, "voxeldungeon:crippled")
+		elseif entitycontrol.isAlive("mobs", buff.target) then
+			buff.target:get_luaentity().max_speed = buff.target:get_luaentity().max_speed * 2
 		end
+	end
+})
+
+voxeldungeon.buffs.register_buff("voxeldungeon:frozen", {
+	description = "Frozen", 
+	icon = "voxeldungeon_buff_frozen.png",
+	autoDecrement = true,
+
+	on_attach = function(buff, first)
+		buff.hp = voxeldungeon.mobs.health(buff.target)
+
+		if not first then return end
+
+		if buff.target:is_player() then
+			voxeldungeon.glog.w("You've been frozen solid!", buff.target)
+			player_monoids.speed:add_change(buff.target, 0, "voxeldungeon:paralyzed")
+			player_monoids.jump:add_change(buff.target, 0, "voxeldungeon:paralyzed")
+
+			voxeldungeon.playerhandler.paralyze(buff.target)
+		else
+			local lua = buff.target:get_luaentity()
+			lua.paralysis = (lua.paralysis or 0) + 1
+			mobkit.clear_queue_high(lua)
+			buff.target:set_texture_mod("^voxeldungeon_overlay_frozen.png")
+		end
+
+		local key = "voxeldungeon:frozen_"..buff.id.."_init"
+		if voxeldungeon.storage.getBool(key) then
+			return
+		else
+			voxeldungeon.storage.put(key, true)
+		end
+
+		if buff.target:is_player() then
+			local freezables = {}
+			local inv = buff.target:get_inventory()
+
+			for i = 1, inv:get_size("main") do
+				local item = inv:get_stack("main", i)
+
+				if not item:is_empty() and minetest.get_item_group(item:get_name(), "freezable") > 0 then
+					table.insert(freezables, {list = "main", index = i, frozen = item})
+				end
+			end
+
+			for i = 1, inv:get_size("craft") do
+				local item = inv:get_stack("craft", i)
+
+				if not item:is_empty() and minetest.get_item_group(item:get_name(), "freezable") > 0 then
+					table.insert(freezables, {list = "craft", index = i, frozen = item})
+				end
+			end
+
+			for i = 1, inv:get_size("craftresult") do
+				local item = inv:get_stack("craftresult", i)
+
+				if not item:is_empty() and minetest.get_item_group(item:get_name(), "freezable") > 0 then
+					table.insert(freezables, {list = "craftresult", index = i, frozen = item})
+				end
+			end
+
+			if #freezables > 0 then
+				local frozen = voxeldungeon.utils.randomObject(freezables)
+
+				voxeldungeon.glog.i("Your "..voxeldungeon.utils.itemShortDescription(frozen.frozen).." freezes!", buff.target)
+
+				local on_freeze = minetest.registered_items[frozen.frozen:get_name()].on_freeze
+				if on_freeze then
+					on_freeze(buff.target, buff.target:get_pos())
+				end
+
+				voxeldungeon.utils.take_item(buff.target, frozen.frozen)
+				inv:set_stack(frozen.list, frozen.index, frozen.frozen)
+			end
+		else
+			local lua = buff.target:get_luaentity()
+			local itemstring = mobkit.recall(lua, "stolen")
+
+			if lua.name == "voxeldungeon:thief" and itemstring then
+				local item = ItemStack(itemstring)
+
+				if  minetest.get_item_group(item:get_name(), "freezable") > 0 then
+					mobkit.forget(lua, "stolen")
+
+					local on_freeze = minetest.registered_items[item:get_name()].on_freeze
+					if on_freeze then
+						on_freeze(buff.target, buff.target:get_pos())
+					end
+				end
+			end
+		end
+	end,
+
+	do_effect = function(buff)
+		local hp = voxeldungeon.mobs.health(buff.target)
+
+		if buff.hp > hp then
+			buff.detach()
+		elseif buff.hp < hp then
+			buff.hp = hp
+		end
+	end,
+
+	on_detach = function(buff)
+		if buff.target:is_player() then
+			player_monoids.speed:del_change(buff.target, "voxeldungeon:paralyzed")
+			player_monoids.jump:del_change(buff.target, "voxeldungeon:paralyzed")
+			
+			voxeldungeon.playerhandler.deparalyze(buff.target)
+		else
+			local lua = buff.target:get_luaentity()
+
+			if lua and minetest then
+				lua.paralysis = lua.paralysis - 1
+			end
+
+			buff.target:set_texture_mod("^blank.png")
+		end
+
+		voxeldungeon.storage.del("voxeldungeon:frozen_"..buff.id.."_init")
 	end
 })
 
@@ -340,8 +489,8 @@ voxeldungeon.buffs.register_buff("voxeldungeon:gasimmunity", {
 	icon = "voxeldungeon_buff_gasimmunity.png",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.h("A protective film envelops you!", buff.target)
 		end
 	end,
@@ -354,16 +503,22 @@ voxeldungeon.buffs.register_buff("voxeldungeon:haste", {
 	icon = "voxeldungeon_buff_fast.png^[multiply:#FFFF00",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
+	on_attach = function(buff, first) 
+		if not first then return end
+
 		if buff.target:is_player() then
 			voxeldungeon.glog.h("You feel energetic!", buff.target)
 			player_monoids.speed:add_change(buff.target, 3, "voxeldungeon:haste")
+		else
+			buff.target:get_luaentity().max_speed = buff.target:get_luaentity().max_speed * 3
 		end
 	end,
 
 	on_detach = function(buff) 
 		if buff.target:is_player() then
 			player_monoids.speed:del_change(buff.target, "voxeldungeon:haste")
+		elseif entitycontrol.isAlive("mobs", buff.target) then
+			buff.target:get_luaentity().max_speed = buff.target:get_luaentity().max_speed / 3
 		end
 	end
 })
@@ -408,9 +563,9 @@ voxeldungeon.buffs.register_buff("voxeldungeon:levitating", {
 	icon = "voxeldungeon_buff_levitation.png",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
+	on_attach = function(buff, first) 
 		voxeldungeon.buffs.detach_buff("voxeldungeon:rooted", buff.target)
-		if buff.target:is_player() then
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.i("You float into the air!", buff.target)
 			player_monoids.gravity:add_change(buff.target, 0, "voxeldungeon:levitating")
 		end
@@ -430,11 +585,45 @@ voxeldungeon.buffs.register_buff("voxeldungeon:mindvision", {
 
 	--See voxeldungeon.utils.getPlayersInArea
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.i("You can somehow feel the presense of other creatures' minds!", buff.target)
 		end
 	end,
+})
+
+voxeldungeon.buffs.register_buff("voxeldungeon:paralyzed", {
+	description = "Paralyzed", 
+	icon = "voxeldungeon_buff_paralysis.png",
+	autoDecrement = true,
+
+	on_attach = function(buff, first)
+		if not first then return end
+
+		if buff.target:is_player() then
+			voxeldungeon.glog.w("You are paralyzed!", buff.target)
+			player_monoids.speed:add_change(buff.target, 0, "voxeldungeon:paralyzed")
+			player_monoids.jump:add_change(buff.target, 0, "voxeldungeon:paralyzed")
+
+			voxeldungeon.playerhandler.paralyze(buff.target)
+		else
+			local lua = buff.target:get_luaentity()
+			lua.paralysis = (lua.paralysis or 0) + 1
+			mobkit.clear_queue_high(lua)
+		end
+	end,
+
+	on_detach = function(buff) 
+		if buff.target:is_player() then
+			player_monoids.speed:del_change(buff.target, "voxeldungeon:paralyzed")
+			player_monoids.jump:del_change(buff.target, "voxeldungeon:paralyzed")
+			
+			voxeldungeon.playerhandler.deparalyze(buff.target)
+		else
+			local lua = buff.target:get_luaentity()
+			lua.paralysis = lua.paralysis - 1
+		end
+	end
 })
 
 voxeldungeon.buffs.register_buff("voxeldungeon:poison", {
@@ -442,8 +631,8 @@ voxeldungeon.buffs.register_buff("voxeldungeon:poison", {
 	icon = "voxeldungeon_buff_poisoned.png",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.w("You are poisoned!", buff.target)
 		end
 	end,
@@ -458,7 +647,9 @@ voxeldungeon.buffs.register_buff("voxeldungeon:rooted", {
 	icon = "voxeldungeon_buff_rooted.png",
 	autoDecrement = true,
 
-	on_attach = function(buff) 
+	on_attach = function(buff, first) 
+		if not first then return end
+
 		if buff.target:is_player() and not voxeldungeon.buffs.get_buff("voxeldungeon:levitating", buff.target) then
 			voxeldungeon.glog.w("You are rooted!", buff.target)
 			player_monoids.speed:add_change(buff.target, 0, "voxeldungeon:rooted")
@@ -485,8 +676,39 @@ voxeldungeon.buffs.register_buff("voxeldungeon:terror", {
 
 	--See mobs.lua/register_mob/on_punch
 
-	do_effect = function(self, customdata)
-		voxeldungeon.mobkit.runfrom(self.target:get_luaentity(), minetest.get_player_by_name(customdata.obj))
+	on_attach = function(buff)
+		if buff.target:is_player() then return end
+
+		local key = "voxeldungeon:terror_"..buff.id.."_obj"
+
+		if buff.customdata.obj then
+			voxeldungeon.storage.put(key, buff.customdata.obj)
+			return
+		end
+
+		local obj = voxeldungeon.storage.getStr(key)
+
+		if obj then
+			buff.customdata.obj = obj
+		else
+			buff.detach()
+		end
+
+		voxeldungeon.mobkit.runfrom(buff.target:get_luaentity(), minetest.get_player_by_name(buff.customdata.obj))
+	end,
+
+	do_effect = function(buff)
+		voxeldungeon.mobkit.runfrom(buff.target:get_luaentity(), minetest.get_player_by_name(buff.customdata.obj))
+	end,
+
+	on_detach = function(buff)
+		if not buff.target:is_player() then
+			voxeldungeon.storage.del("voxeldungeon:terror_"..buff.id.."_obj")
+
+			if entitycontrol.isAlive("mobs", buff.target) then
+				mobkit.clear_queue_high(buff.target:get_luaentity())
+			end
+		end
 	end,
 })
 
@@ -497,8 +719,8 @@ voxeldungeon.buffs.register_buff("voxeldungeon:weakness", {
 
 	--See voxeldungeon.playerhandler.getSTR
 
-	on_attach = function(buff) 
-		if buff.target:is_player() then
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
 			voxeldungeon.glog.w("You feel weakened!", buff.target)
 			voxeldungeon.tools.updateStrdiffArmor(buff.target)
 		end
@@ -523,5 +745,11 @@ minetest.register_on_joinplayer(function(player)
 		if num and num > 0 then
 			voxeldungeon.buffs.attach_buff(b, player, num)
 		end
+	end
+end)
+
+minetest.register_on_dieplayer(function(player)
+	for _, buff in pairs(player_buffs[player:get_player_name()]) do
+		buff.detach()
 	end
 end)

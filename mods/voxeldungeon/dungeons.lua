@@ -290,6 +290,30 @@ function voxeldungeon.dungeons.newLevel(startpos, sizefactor)
 		end
 	end
 
+	local tunnels = {}
+	for i = 2, #placedRooms - 1 do
+		if placedRooms[i].tunnelPlaceholder then
+			local oldpos = placedRooms[i].pos
+			local oldsize = placedRooms[i].size
+
+			local p1 = vector.subtract(placedRooms[i].pos, placedRooms[i - 1].pos)
+			local p2 = vector.subtract(placedRooms[i].pos, placedRooms[i + 1].pos)
+
+			local tunnel = voxeldungeon.rooms.tunnel(p1, p2)
+			tunnel.position({
+				x = oldpos.x + (oldsize.x - placedRooms[i].size.x),
+				y = oldpos.y,
+				z = oldpos.z + (oldsize.z - placedRooms[i].size.z),
+			})
+
+			table.insert(tunnels, tunnel)
+		end
+	end
+
+	for _, t in ipairs(tunnels) do
+		table.insert(placedRooms, 1, t)
+	end
+
 	--[[
 	local p1
 	local p2

@@ -88,17 +88,19 @@ end
 
 
 
-function entitycontrol.isAlive(list, index)
-	if not index then
-		index = list
+function entitycontrol.isAlive(list, obj)
+	if not obj then
+		obj = list
 		list = "default"
 	end
 
-	local ent = entitycontrol.get_entity(list, index)
+	if type(obj) == "number" then
+		obj = entitycontrol.get_entity(list, obj)
+	end
 
-	if ent == "unloaded" then return false end
+	if obj == "unloaded" then return false end
 
-	if ent and ent:get_pos() then return true end
+	if obj and obj:get_pos() then return true end
 end
 
 local function directLineOfSight(a, b)

@@ -158,7 +158,8 @@ minetest.register_decoration({
 	y_min = -31000,
 
 	flags = "all_floors",
-	decoration = {"voxeldungeon:plant_fadeleaf", "voxeldungeon:plant_firebloom", "voxeldungeon:plant_sorrowmoss", "voxeldungeon:plant_sungrass"}
+	decoration = {"voxeldungeon:plant_earthroot", "voxeldungeon:plant_fadeleaf", "voxeldungeon:plant_firebloom", "voxeldungeon:plant_icecap", 
+			"voxeldungeon:plant_sorrowmoss", "voxeldungeon:plant_sungrass"}
 })
 
 local namelist = {"sewers", "prisons", "caves", "cities", "halls"}
@@ -191,8 +192,9 @@ for i = 1, 5 do
 		y_min = -31000,
 
 		flags = "all_floors",
-		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping", "voxeldungeon:trap_"..namelist[i].."_poisondart", 
-				"voxeldungeon:trap_"..namelist[i].."_teleport", "voxeldungeon:trap_"..namelist[i].."_toxicgas"}
+		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping", "voxeldungeon:trap_"..namelist[i].."_paralyticgas", 
+				"voxeldungeon:trap_"..namelist[i].."_poisondart", "voxeldungeon:trap_"..namelist[i].."_teleport", 
+				"voxeldungeon:trap_"..namelist[i].."_toxicgas"}
 	})
 
 	minetest.register_decoration({
@@ -215,8 +217,9 @@ for i = 1, 5 do
 		y_min = -31000,
 
 		flags = "all_floors",
-		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping_hidden", "voxeldungeon:trap_"..namelist[i].."_poisondart_hidden", 
-				"voxeldungeon:trap_"..namelist[i].."_teleport_hidden", "voxeldungeon:trap_"..namelist[i].."_toxicgas_hidden"}
+		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping_hidden", "voxeldungeon:trap_"..namelist[i].."_paralyticgas_hidden", 
+				"voxeldungeon:trap_"..namelist[i].."_poisondart_hidden", "voxeldungeon:trap_"..namelist[i].."_teleport_hidden", 
+				"voxeldungeon:trap_"..namelist[i].."_toxicgas_hidden"}
 	})
 
 

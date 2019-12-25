@@ -28,9 +28,9 @@ end
 
 
 function voxeldungeon.register_plant(name, desc, activate)
-	local do_activate = function(pos, objs)
+	local do_activate = function(pos, obj)
 		minetest.set_node(pos, {name = "voxeldungeon:sewers_shortgrass"})
-		activate(pos, objs)
+		activate(pos, obj)
 		check_foilage(pos)
 		voxeldungeon.particles.burst("grass", pos, 6)
 	end
@@ -52,21 +52,21 @@ function voxeldungeon.register_plant(name, desc, activate)
 		
 		after_dig_node = do_activate,
 		on_blast = do_activate,
-		on_step = do_activate
+		_on_move_on = do_activate
 	})
 end
 
 function voxeldungeon.register_foilage(name, desc, trampled)
-	local do_activate = function(pos, objs)
+	local do_activate = function(pos, obj)
 		minetest.set_node(pos, {name = "voxeldungeon:"..trampled})
 		check_foilage(pos)
 		
-		if math.floor(math.random(18)) == 1 then
+		if math.random(18) == 1 then
 			local seedname = voxeldungeon.generator.randomSeed()
 			minetest.add_item(pos, {name = seedname})
 		end
 		
-		if math.floor(math.random(6)) == 1 then
+		if math.random(6) == 1 then
 			minetest.add_item(pos, {name = "voxeldungeon:dew"})
 		end
 		
@@ -140,7 +140,7 @@ function voxeldungeon.register_foilage(name, desc, trampled)
 		
 		after_dig_node = do_activate,
 		on_blast = do_activate,
-		on_step = do_activate
+		_on_move_on = do_activate
 	})
 	
 	minetest.register_node("voxeldungeon:foilage_"..name.."_top",
@@ -158,24 +158,32 @@ function voxeldungeon.register_foilage(name, desc, trampled)
 		
 		after_dig_node = check_foilage,
 		on_blast = check_foilage,
-		on_step = check_foilage
+		_on_move_on = check_foilage
 	})
 end
 
 
 
-voxeldungeon.register_plant("earthroot", "Earthroot\n \nWhen a creature touches an Earthroot, its roots create a kind of natural armor around it, which absorb all damage until they break.", function(pos, objs)
-	for i = 1, #objs do
-		if objs[i]:is_player() then
-			voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_armor", objs[i],
-				voxeldungeon.playerhandler.playerdata[objs[i]:get_player_name()].HT - 1)
-		end 
+voxeldungeon.register_plant("earthroot", "Earthroot\n \nWhen a creature touches an Earthroot, its roots create a kind of natural armor around it, which absorb all damage until they break.", function(pos, obj)
+	if obj:is_player() then
+		voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_armor", obj,
+			voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT - 1)
 	end
 end)
 
-voxeldungeon.register_plant("fadeleaf", "Fadeleaf\n \nTouching a Fadeleaf will teleport any creature to a random place within 100 blocks.", function(pos, objs)
-	for i = 1, #objs do
-		voxeldungeon.utils.randomTeleport(objs[i])
+voxeldungeon.register_plant("fadeleaf", "Fadeleaf\n \nTouching a Fadeleaf will teleport any creature to a random place within 100 blocks.", function(pos, obj)
+	for i = 1, entitycontrol.count_entities() do
+		local e = entitycontrol.get_entity(i)
+
+		if entitycontrol.isAlive(i) and vector.equals(vector.round(e:get_pos()), pos) then
+			voxeldungeon.utils.randomTeleport(e)
+		end
+	end
+
+	for _, p in ipairs(minetest.get_connected_players()) do
+		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
+			voxeldungeon.utils.randomTeleport(p)
+		end
 	end
 end)
 
@@ -183,24 +191,75 @@ voxeldungeon.register_plant("firebloom", "Firebloom\n \nWhen something touches a
 	minetest.set_node(pos, {name = "fire:basic_flame"})
 end)
 
+voxeldungeon.register_plant("icecap", "Icecap\n \nUpon being touched, an Icecap excretes a pollen that freezes everything in its vicinity.", function(p)
+	for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
+		local pos = vector.add(vector.round(p), n)
+
+		for _, p in pairs(minetest.get_connected_players()) do
+			if vector.equals(vector.round(p:get_pos()), pos) then
+				voxeldungeon.buffs.attach_buff("voxeldungeon:frozen", p, math.random(10, 15))
+			end
+		end
+
+		for i = 1, entitycontrol.count_entities() do
+			local e = entitycontrol.get_entity(i)
+
+			if entitycontrol.isAlive(e) and vector.equals(vector.round(e:get_pos()), pos) then
+				if e:get_luaentity().name == "__builtin:item" then
+					local item = ItemStack(e:get_luaentity().itemstring)
+
+					if minetest.get_item_group(item:get_name(), "freezable") > 0 then
+						local on_freeze = minetest.registered_items[item:get_name()].on_freeze
+
+						if on_freeze then
+							on_freeze(nil, pos)
+						end
+
+						e:remove()
+					end
+				else
+					voxeldungeon.buffs.attach_buff("voxeldungeon:frozen", e, math.random(10, 15))
+				end
+			end
+		end
+
+		local node = minetest.get_node_or_nil(pos)
+		if minetest.get_item_group(node.name, "water") > 0 then
+			minetest.place_node(pos, {name="default:ice"})
+		elseif node.name == "default:lava_source" then
+			minetest.place_node(pos, {name="default:obsidian"})
+		elseif node.name == "default:lava_flowing" then
+			minetest.place_node(pos, {name="default:stone"})
+		end
+	end
+end)
+
 voxeldungeon.register_plant("rotberry", "Rotberry", function(pos)
 	voxeldungeon.blobs.seed("toxicgas", pos, 300)
 end)
 
-voxeldungeon.register_plant("sorrowmoss", "Sorrowmoss\n \nA Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.", function(pos, objs)
-	for i = 1, #objs do
-		voxeldungeon.buffs.attach_buff("voxeldungeon:poison", objs[i], 5 + math.floor(voxeldungeon.utils.getDepth(pos) * 2 / 3))
+voxeldungeon.register_plant("sorrowmoss", "Sorrowmoss\n \nA Sorrowmoss is a flower (not a moss) with razor-sharp petals, coated with a deadly venom.", function(pos, obj)
+	for i = 1, entitycontrol.count_entities("mobs") do
+		local e = entitycontrol.get_entity("mobs", i)
+
+		if entitycontrol.isAlive("mobs", i) and vector.equals(vector.round(e:get_pos()), pos) then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", e, 5 + math.floor(voxeldungeon.utils.getDepth(pos) * 2 / 3))
+		end
 	end
-	
+
+	for _, p in ipairs(minetest.get_connected_players()) do
+		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
+			voxeldungeon.buffs.attach_buff("voxeldungeon:poison", p, 5 + math.floor(voxeldungeon.utils.getDepth(pos) * 2 / 3))
+		end
+	end
+
 	voxeldungeon.particles.burst("poison", pos, 3)
 end)
 
-voxeldungeon.register_plant("sungrass", "Sungrass\n \nSungrass is renowned for its sap's healing properties, though the user must stand still for it to work.", function(pos, objs)
-	for i = 1, #objs do
-		if objs[i]:is_player() then
-			voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_healing", objs[i],
-				voxeldungeon.playerhandler.playerdata[objs[i]:get_player_name()].HT)
-		end 
+voxeldungeon.register_plant("sungrass", "Sungrass\n \nSungrass is renowned for its sap's healing properties, though the user must stand still for it to work.", function(pos, obj)
+	if obj:is_player() then
+		voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_healing", obj,
+			voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT)
 	end
 	
 	voxeldungeon.particles.factory("shaft", vector.add(pos, {x=0,y=1,z=0}), 3, 1.2)

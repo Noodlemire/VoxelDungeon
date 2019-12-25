@@ -122,3 +122,38 @@ minetest.override_item("default:torch", {
 	inventory_image = "voxeldungeon_item_torch.png",
 	wield_image = "voxeldungeon_item_torch.png"
 })
+
+
+
+local super_book_on_use = minetest.registered_items["default:book"].on_use
+minetest.override_item("default:book", {
+	on_use = function(itemstack, user, pointed_thing)
+		if voxeldungeon.buffs.get_buff("voxeldungeon:blind", user) then
+			voxeldungeon.glog.w("You can't read a book while blinded.", user)
+		else
+			return super_book_on_use(itemstack, user, pointed_thing)
+		end
+	end
+})
+
+local super_booklocked_on_use = minetest.registered_items["books_plus:booklocked"].on_use
+minetest.override_item("books_plus:booklocked", {
+	on_use = function(itemstack, user, pointed_thing)
+		if voxeldungeon.buffs.get_buff("voxeldungeon:blind", user) then
+			voxeldungeon.glog.w("You can't read a book while blinded.", user)
+		else
+			return super_booklocked_on_use(itemstack, user, pointed_thing)
+		end
+	end
+})
+
+local super_bookwritten_on_use = minetest.registered_items["books_plus:written_book"].on_use
+minetest.override_item("books_plus:written_book", {
+	on_use = function(itemstack, user, pointed_thing)
+		if voxeldungeon.buffs.get_buff("voxeldungeon:blind", user) then
+			voxeldungeon.glog.w("You can't read a book while blinded.", user)
+		else
+			return super_bookwritten_on_use(itemstack, user, pointed_thing)
+		end
+	end
+})

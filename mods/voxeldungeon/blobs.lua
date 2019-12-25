@@ -192,6 +192,10 @@ function voxeldungeon.blobs.clear(names, pos)
 	end
 end
 
+function voxeldungeon.blobs.get(name, pos)
+	return voxeldungeon.blobs.registered_blobs[name].posses.get(pos) or 0
+end
+
 
 --[[
 voxeldungeon.blobs.register("fire", 
@@ -213,9 +217,25 @@ voxeldungeon.blobs.register("fire",
 	end
 )--]]
 
+voxeldungeon.blobs.register("paralyticgas", {
+	spreadCondition = function(pos)
+		return not voxeldungeon.utils.solid(pos) and voxeldungeon.blobs.get("voxeldungeon:blob_toxicgas", pos) == 0
+	end, 
+
+	effectTerr = function(blob, pos, amount)
+		if voxeldungeon.utils.randomDecimal(blob.posses.size() / (blob.posses.size() + 2)) <= 1/3 then
+			voxeldungeon.particles.burst("paralytic", pos, 1)
+		end
+	end,
+
+	effectObj = function(blob, pos, amount, obj)
+		voxeldungeon.buffs.attach_buff("voxeldungeon:paralyzed", obj, 10)
+	end
+})
+
 voxeldungeon.blobs.register("toxicgas", {
 	spreadCondition = function(pos)
-		return not voxeldungeon.utils.solid(pos)
+		return not voxeldungeon.utils.solid(pos) and voxeldungeon.blobs.get("voxeldungeon:blob_paralyticgas", pos) == 0
 	end, 
 
 	effectTerr = function(blob, pos, amount)

@@ -63,7 +63,50 @@ local potion_defs =
 	},
 	{
 		name = "frost",
-		desc = "Frost",
+		desc = "Frost\n \nUpon exposure to open air, this chemical will evaporate into a freezing cloud, causing any creature that contacts it to be frozen in place, unable to act and move.",
+
+		shatter = function(p)
+			for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
+				local pos = vector.add(vector.round(p), n)
+
+				for _, p in pairs(minetest.get_connected_players()) do
+					if vector.equals(vector.round(p:get_pos()), pos) then
+						voxeldungeon.buffs.attach_buff("voxeldungeon:frozen", p, math.random(10, 15))
+					end
+				end
+
+				for i = 1, entitycontrol.count_entities() do
+					local e = entitycontrol.get_entity(i)
+
+					if entitycontrol.isAlive(e) and vector.equals(vector.round(e:get_pos()), pos) then
+						if e:get_luaentity().name == "__builtin:item" then
+							local item = ItemStack(e:get_luaentity().itemstring)
+
+							if minetest.get_item_group(item:get_name(), "freezable") > 0 then
+								local on_freeze = minetest.registered_items[item:get_name()].on_freeze
+
+								if on_freeze then
+									on_freeze(nil, pos)
+								end
+
+								e:remove()
+							end
+						else
+							voxeldungeon.buffs.attach_buff("voxeldungeon:frozen", e, math.random(10, 15))
+						end
+					end
+				end
+
+				local node = minetest.get_node_or_nil(pos)
+				if minetest.get_item_group(node.name, "water") > 0 then
+					minetest.place_node(pos, {name="default:ice"})
+				elseif node.name == "default:lava_source" then
+					minetest.place_node(pos, {name="default:obsidian"})
+				elseif node.name == "default:lava_flowing" then
+					minetest.place_node(pos, {name="default:stone"})
+				end
+			end
+		end
 	},
 	{
 		name = "healing",
@@ -107,7 +150,11 @@ local potion_defs =
 	},
 	{
 		name = "paralyticgas",
-		desc = "Paralytic Gas",
+		desc = "Paralytic Gas\n \nUpon exposure to open air, the liquid in this flask will vaporize into a numbing yellow haze. Anyone who inhales the cloud will be paralyzed instantly, unable to move or act for some time after the cloud dissipates. This item can be thrown at distant enemies to catch them within the effect of the gas.",
+
+		shatter = function(pos)
+			voxeldungeon.blobs.seed("paralyticgas", pos, 3000)
+		end
 	},
 	{
 		name = "purification",
@@ -165,6 +212,7 @@ local function register_potion(name, desc, color, drink, shatter)
 	voxeldungeon.register_throwingitem("potion_"..name, "Potion of "..desc..
 								"\n \nLeft click while holding a potion to drink it."..
 								"\nRight click while holding a potion to throw it.", 
+
 	function(pos)
 		if shatter then
 			shatter(pos)
@@ -176,8 +224,9 @@ local function register_potion(name, desc, color, drink, shatter)
 	{
 		inventory_image = "voxeldungeon_item_potion_"..color..".png",
 		_cornerLR = "voxeldungeon_icon_potion_"..name..".png",
+		groups = {freezable = 1},
 
-		on_use = function(itemstack, user) 
+		on_use = function(itemstack, user)
 			if drink then
 				drink(itemstack, user)
 			elseif shatter then
@@ -188,6 +237,14 @@ local function register_potion(name, desc, color, drink, shatter)
 
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end,
+
+		on_freeze = function(user, pos)
+			if shatter then
+				shatter(pos)
+			else
+				default_shatter(pos, color)
+			end
+		end
 	})
 end
 
