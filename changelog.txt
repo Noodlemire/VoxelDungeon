@@ -155,3 +155,7 @@ Alpha 1.3.0:
 		Typo in the message players get when teleported
 		The entity used to freeze players in place being visible
 		Some food items being infinitely usable
+
+Alpha 1.3.1:
+	Fixed:
+		Crash caused by a player being punched while wearing any kind of armor.

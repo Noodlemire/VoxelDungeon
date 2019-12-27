@@ -128,6 +128,15 @@ minetest.register_chatcommand("mystats", {
 	end
 })
 
+local function getDefenseOf(armor)
+	local level = armor:get_meta():get_int("voxeldungeon:level")
+
+	local def = armor:get_definition()
+	local tier = def._tier
+
+	return tier + tier * level
+end
+
 minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
 	if voxeldungeon.playerhandler.isParalyzed(hitter) then return end
 

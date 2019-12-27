@@ -108,15 +108,6 @@ end
 
 --armor
 
-local function getDefenseOf(armor)
-	local level = armor:get_meta():get_int("voxeldungeon:level")
-
-	local def = armor:get_definition()
-	local tier = def._tier
-
-	return tier + tier * level
-end
-
 function voxeldungeon.tools.updateDescriptionArmor(armor)
 	local meta = armor:get_meta()
 	local level = meta:get_int("voxeldungeon:level")
