@@ -360,7 +360,7 @@ local function register_trap(name, desc, on_trigger)
 			sunlight_propogates = true,
 			walkable = false,
 			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
-			_on_move_on = function(pos, obj)
+			_on_move_in = function(pos, obj)
 				minetest.set_node(pos, {name = "voxeldungeon:trap_"..namelist[i].."_wornout"})
 				on_trigger(pos, obj)
 			end,
@@ -390,9 +390,9 @@ local function register_trap(name, desc, on_trigger)
 			paramtype = "light",
 			sunlight_propogates = true,
 			walkable = false,
-			groups = {attached_node = 1, oddly_breakable_by_hand = 2}, 
+			groups = {attached_node = 1, oddly_breakable_by_hand = 2, hidden = 1}, 
 
-			_on_move_on = function(pos, obj)
+			_on_move_in = function(pos, obj)
 				if obj:is_player() then
 					voxeldungeon.glog.i("A hidden pressure plate clicks!", obj)
 				end
@@ -452,7 +452,7 @@ register_trap("poisondart", "Poison Dart", function(pos, obj)
 		end
 	end
 
-	voxeldungeon.particles.burst("poison", pos, 3)
+	voxeldungeon.particles.burst(voxeldungeon.particles.poison, pos, 3)
 end)
 
 register_trap("teleport", "Teleportation", function(pos, obj)
@@ -654,7 +654,7 @@ minetest.register_node("voxeldungeon:demonite_block", {
 	sounds = default.node_sound_stone_defaults(),
 })
 
-minetest.after(0, minetest.override_item, "default:chest", 
+minetest.override_item("default:chest", 
 {
 	tiles = {
 		"voxeldungeon_node_chest_top.png",
@@ -669,7 +669,7 @@ minetest.after(0, minetest.override_item, "default:chest",
 	wield_image = "voxeldungeon_node_chest_icon.png",
 })
 
-minetest.after(0, minetest.override_item, "default:chest_open", 
+minetest.override_item("default:chest_open", 
 {
 	tiles = {
 		"voxeldungeon_node_chest_top.png",
@@ -682,4 +682,8 @@ minetest.after(0, minetest.override_item, "default:chest_open",
 
 	inventory_image = "voxeldungeon_node_chest_icon.png",
 	wield_image = "voxeldungeon_node_chest_icon.png",
+})
+
+minetest.override_item("default:snow", {
+	walkable = false
 })

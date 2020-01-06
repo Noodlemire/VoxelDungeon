@@ -30,7 +30,7 @@ entitycontrol.registerTrackingList("mobs", {
 	"voxeldungeon:thief", "voxeldungeon:skeleton",
 	"voxeldungeon:spider",
 
-	"voxeldungeon:bee", "voxeldungeon:mimic"
+	"voxeldungeon:bee", "voxeldungeon:mimic", "voxeldungeon:sheep"
 })
 
 
@@ -68,6 +68,33 @@ function voxeldungeon.mobs.damage(mob, amount, cause)
 	end
 end
 
+function voxeldungeon.mobs.spawn_multiple(mob, pos, amount, range)
+	pos = vector.round(pos)
+	range = range or 1
+
+	for a = -range, range do 
+		for b = -range, range do 
+			for c = -range, range do
+				if a == -range or a == range or b == -range or b == range or c == -range or c == range then
+					local offpos = vector.add(pos, {x=a, y=b, z=c})
+
+					if math.random(3) == 1 and not voxeldungeon.utils.solid(offpos) and
+							#voxeldungeon.utils.getLivingInArea(offpos, 0.5, true) == 0 then
+						minetest.add_entity(offpos, mob)
+						amount = amount - 1
+
+						if amount <= 0 then
+							return
+						end
+					end
+				end
+			end 
+		end 
+	end
+
+	voxeldungeon.mobs.spawn_multiple(mob, pos, amount, range + 1)
+end
+
 local function register_mob(name, def)
 	def.physical = true
 	def.collide_with_objects = true
@@ -80,15 +107,22 @@ local function register_mob(name, def)
 	def.max_speed = def.max_speed or 4
 	def.attack.range = 1.5
 	def.attack.full_punch_interval = def.attack.full_punch_interval or 1
-	def.armor_groups = def.armor_groups or {fleshy = 0}
+	def.armor = def.armor or 0
 
 	def.on_step = function(self, dtime)
 		mobkit.stepfunc(self, dtime)
 		if def._on_step then def._on_step(self, dtime) end
 
-		if #voxeldungeon.utils.getPlayersInArea(self.object:get_pos(), 100) > 0 then
+		local pos = self.object:get_pos()
+		pos.y = pos.y + 0.5
+
+		if #voxeldungeon.utils.getPlayersInArea(pos, 100) > 0 then
 			local id = entitycontrol.get_entity_id("mobs", self) or "nil"
-			local nametag = self.description..'\n'..self.hp.." / "..self.max_hp.." HP"
+			local nametag = self.description
+
+			if not self.groups or not self.groups.immortal then
+				nametag = nametag..'\n'..self.hp.." / "..self.max_hp.." HP"
+			end
 --[[
 			for b, _ in pairs(voxeldungeon.buffs.registered_buffs) do
 				local buff = voxeldungeon.buffs.get_buff(b, self)
@@ -133,11 +167,22 @@ local function register_mob(name, def)
 	def.brainfunc = def.brainfunc or voxeldungeon.mobkit.landBrain
 
 	def.on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
-		if voxeldungeon.playerhandler.isParalyzed(puncher) then return end
+		if (self.groups and self.groups.immortal) or voxeldungeon.playerhandler.isParalyzed(puncher) then return end
 
 		if mobkit.is_alive(self) then
+			if puncher:is_player() then
+				local weapon = puncher:get_wielded_item()
+				time_from_last_punch = voxeldungeon.playerhandler.getTimeFromLastPunch(puncher)
 
-			local damage = tool_capabilities.damage_groups.fleshy or 1
+				if minetest.get_item_group(weapon:get_name(), "weapon") > 0 then
+					weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, puncher, {type = "object", ref = self.object})
+					minetest.after(0, function() puncher:set_wielded_item(weapon) end)
+				end
+			end
+
+			local damage = voxeldungeon.utils.round(math.max(0, (tool_capabilities.damage_groups.fleshy or 1) 
+				* math.min(1, time_from_last_punch / (tool_capabilities.full_punch_interval or 1))
+				- self.armor))
 			
 			mobkit.hurt(self, damage)
 
@@ -160,7 +205,30 @@ local function register_mob(name, def)
 			end
 
 			if def._on_punch then def._on_punch(self, puncher, time_from_last_punch, tool_capabilities, dir) end
+
+			voxeldungeon.particles.burst(voxeldungeon.particles.blood, self.object:get_pos(), 5, {
+				color = def._blood, 
+				angle = vector.direction(puncher:get_pos(), self.object:get_pos())
+			})
 		end
+	end
+
+	def.on_rightclick = function(self, clicker)
+		local item = clicker:get_wielded_item()
+		if item and not item:is_empty() then
+			local rc = minetest.registered_items[item:get_name()].on_secondary_use
+
+			if rc then
+				rc(item, clicker, {type="object", ref=self.object})
+			end
+		end
+	end
+
+	def.on_blast = def.on_blast or function(self, damage)
+		mobkit.hurt(self, damage)
+		local drops = voxeldungeon.mobkit.HPChecks(self) or {}
+
+		return false, true, drops
 	end
 
 	minetest.register_entity("voxeldungeon:"..name, def)
@@ -219,7 +287,7 @@ register_mob("scout", {
 	alignment = "evil",
 	max_hp = 12,
 	attack = {damage_groups = {fleshy = 4}},
-	armor_groups = {fleshy = 1},
+	armor = 1,
 	_drops = {{name = "voxeldungeon:gold", chance = 0.5, min = 30, max = 120}}
 })
 mobs:register_egg("voxeldungeon:scout", "Gnoll Scout", "voxeldungeon_icon_mob_scout.png", 1)
@@ -233,7 +301,7 @@ register_mob("crab", {
 	alignment = "evil",
 	max_hp = 15,
 	attack = {damage_groups = {fleshy = 5}},
-	armor_groups = {fleshy = 2},
+	armor = 2,
 	max_speed = 8,
 	_drops = {{name = "voxeldungeon:mystery_meat", chance = 0.167, min = 1, max = 1}}
 })
@@ -244,6 +312,7 @@ register_mob("dirt_monster", {
 	mesh = "mobs_stone_monster.b3d",
 	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
 	textures = {"mobs_dirt_monster.png"},
+	_blood = {r = 47, g = 33, b = 0},
 
 	description = "dirt monster",
 	alignment = "evil",
@@ -265,6 +334,7 @@ register_mob("sand_monster", {
 	mesh = "mobs_sand_monster.b3d",
 	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
 	textures = {"mobs_sand_monster.png"},
+	_blood = {r = 232, g = 201, b = 108},
 
 	description = "sand monster",
 	alignment = "evil",
@@ -286,6 +356,7 @@ register_mob("tree_monster", {
 	mesh = "mobs_tree_monster.b3d",
 	collisionbox = {-0.4, -1, -0.4, 0.4, 0.8, 0.4},
 	textures = {"mobs_tree_monster.png"},
+	_blood = {r = 234, g = 208, b = 156},
 
 	description = "tree monster",
 	alignment = "evil",
@@ -320,7 +391,8 @@ register_mob("thief", {
 	alignment = "evil",
 	max_hp = 20,
 	attack = {damage_groups = {fleshy = 4}},
-	armor_groups = {fleshy = 1},
+	armor = 1,
+	undead = true,
 
 	_steal = function(self, player) 
 		local item = voxeldungeon.utils.randomItem(player:get_inventory())
@@ -369,13 +441,15 @@ mobs:register_egg("voxeldungeon:thief", "Crazy Thief", "voxeldungeon_icon_mob_th
 register_mob("skeleton", {
 	collisionbox = {-0.4, -0.5, -0.4, 0.4, 0.5, 0.4},
 	textures = {"voxeldungeon_icon_mob_skeleton.png"},
+	_blood = {r = 206, g = 206, b = 206},
 
 	description = "skeleton",
 	alignment = "evil",
 	max_hp = 25,
 	attack = {damage_groups = {fleshy = 6}},
-	armor_groups = {fleshy = 3},
+	armor = 3,
 	_drops = {{name = voxeldungeon.generator.randomWeapon, chance = 0.167, min = 1, max = 1}},
+	undead = true,
 
 	_on_death = function(self)
 		local pos = self.object:get_pos()
@@ -643,6 +717,47 @@ register_mob("mimic", {
 })
 mobs:register_egg("voxeldungeon:mimic", "Mimic", "voxeldungeon_node_chest_icon.png", 1)
 
+register_mob("sheep", {
+	collisionbox = {-0.5, -0.5, -0.5, 0.5, 0.5, 0.5},
+	textures = {"voxeldungeon_icon_mob_sheep.png"},
+
+	description = "magic sheep",
+	max_hp = 1,
+	attack = {damage_groups = {fleshy = 0}},
+	groups = {immortal = 1, does_nothing = 1},
+
+	_on_activate = function(self)
+		voxeldungeon.particles.burst(voxeldungeon.particles.flock, self.object:get_pos(), 3)
+	end,
+
+	_on_step = function(self, dtime)
+		local timer = mobkit.recall(self, "timer") or 10
+		timer = timer - dtime
+		mobkit.remember(self, "timer", timer)
+
+		if timer <= 0 then
+			self.object:remove()
+
+			tnt.boom(self.object:get_pos(), {
+				radius = 2,
+				damage_radius = 3
+			})
+		end
+	end,
+
+	on_blast = function(self, damage)
+		self.object:remove()
+
+		tnt.boom(self.object:get_pos(), {
+			radius = 2,
+			damage_radius = 3
+		})
+
+		return nil, nil, {}
+	end
+})
+mobs:register_egg("voxeldungeon:sheep", "Sheep", "voxeldungeon_icon_mob_sheep.png", 1)
+
 
 
 --The setting "mobs_spawn" is set to false not because mobs don't spawn, 
@@ -653,12 +768,12 @@ local function register_spawning(depth, valid_ground, mobTable)
 		label = "spawning_"..(depth or "anywhere"),
 		nodenames = valid_ground,
 		interval = 30,
-		chance = 2500,
+		chance = 3000,
 		catch_up = false,
 
 		action = function(pos, node, active_object_count, active_object_count_wider)
 			--do not spawn if too many entities in area
-			if active_object_count_wider >= 50 then
+			if active_object_count_wider >= 30 then
 				return
 			end
 
@@ -674,6 +789,11 @@ local function register_spawning(depth, valid_ground, mobTable)
 			--only spawn in dark areas
 			local light = minetest.get_node_light(pos)
 			if not light or light > 7 then
+				return
+			end
+
+			--don't spawn in liquids
+			if minetest.get_item_group(node.name, "liquid") > 0 then
 				return
 			end
 

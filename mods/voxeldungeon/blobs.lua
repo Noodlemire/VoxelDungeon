@@ -34,12 +34,10 @@ local function expandUpon(posses, spreadCondition)
 		if a > 0 then
 			for _, n in pairs(voxeldungeon.utils.NEIGHBORS7) do
 				local newpos = vector.add(p, n)
+				local posval = posses.get(newpos) or 0
+
 				if spreadCondition(newpos) or minetest.get_node(p).name == "ignore" then
-					if not posses.get(newpos) and not newposses.get(newpos) then
-						newposses.set(newpos, 0)
-					elseif posses.get(newpos) then
-						newposses.set(newpos, posses.get(newpos))
-					end
+					newposses.set(newpos, posval)
 				end
 			end
 		end
@@ -123,33 +121,42 @@ function voxeldungeon.blobs.register(name, def)
 		for i = 1, offload.size() do
 			local p = offload.getVector(i)
 
-			if minetest.get_node(p).name ~= "ignore" then
-				if blob.spreadCondition(p) then
-					local count = 1
-					local sum = blob.posses.getValue(i) or 0
+			if p then
+				if minetest.get_node(p).name ~= "ignore" then
+					if blob.spreadCondition(p) then
+						local count = 1
+						local sum = blob.posses.getValue(i) or 0
 
-					for _, n in pairs(voxeldungeon.utils.NEIGHBORS6) do
-						local neighbor = vector.add(p, n)
-						if not voxeldungeon.utils.solid(neighbor) then
-							sum = sum + (blob.posses.get(neighbor) or 0)
-							count = count + 1
+						for _, n in pairs(voxeldungeon.utils.NEIGHBORS6) do
+							local neighbor = vector.add(p, n)
+
+							if blob.spreadCondition(neighbor) then
+								sum = sum + (blob.posses.get(neighbor) or 0)
+								count = count + 1
+							end
 						end
-					end
 
-					local value = 0
-					if sum >= count then
-						value = math.floor(sum / count) - 1
-					end
+						local value = 0
+						if sum >= count then
+							value = math.floor(sum / count) - 1
+						end
 
+						offload.set(p, value)
+						blob.volume = blob.volume + value
+					else
+						offload.del(p)
+					end
+				else
+					local value = blob.posses.get(p) or 0
 					offload.set(p, value)
 					blob.volume = blob.volume + value
-				else
-					offload.del(p)
 				end
-			else
-				local value = blob.posses.get(p) or 0
-				offload.set(p, value)
-				blob.volume = blob.volume + value
+			end
+		end
+
+		for i = offload.size(), 1, -1 do
+			if offload.getValue(i) == 0 then
+				offload.del(offload.getVector(i))
 			end
 		end
 
@@ -197,6 +204,22 @@ function voxeldungeon.blobs.get(name, pos)
 end
 
 
+
+voxeldungeon.blobs.register("corrosivegas", {
+	spreadCondition = function(pos)
+		return not voxeldungeon.utils.solid(pos)
+	end, 
+
+	effectTerr = function(blob, pos, amount)
+		if voxeldungeon.utils.randomDecimal(blob.posses.size() / (blob.posses.size() + 2)) <= 1/3 then
+			voxeldungeon.particles.corrosion(pos)
+		end
+	end,
+
+	effectObj = function(blob, pos, amount, obj)
+		voxeldungeon.buffs.attach_buff("voxeldungeon:corrosion", obj, 2, {dmg = math.floor(amount / 25)})
+	end
+})
 --[[
 voxeldungeon.blobs.register("fire", 
 	function(pos)
@@ -224,7 +247,7 @@ voxeldungeon.blobs.register("paralyticgas", {
 
 	effectTerr = function(blob, pos, amount)
 		if voxeldungeon.utils.randomDecimal(blob.posses.size() / (blob.posses.size() + 2)) <= 1/3 then
-			voxeldungeon.particles.burst("paralytic", pos, 1)
+			voxeldungeon.particles.paralytic(pos)
 		end
 	end,
 
@@ -240,7 +263,7 @@ voxeldungeon.blobs.register("toxicgas", {
 
 	effectTerr = function(blob, pos, amount)
 		if voxeldungeon.utils.randomDecimal(blob.posses.size() / (blob.posses.size() + 2)) <= 1/3 then
-			voxeldungeon.particles.burst("toxic", pos, 1)
+			voxeldungeon.particles.toxic(pos)
 		end
 	end,
 

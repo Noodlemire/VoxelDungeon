@@ -4,11 +4,12 @@ on_move_callbacks.playerlastpos = {}
 on_move_callbacks.entitylastpos = {}
 
 local function processOn(obj, pos)
+	pos = vector.round(pos)
 	local nodename = minetest.get_node(pos).name
 	local nodedef = minetest.registered_nodes[nodename]
 
-	if nodedef and not nodedef.walkable and nodedef._on_move_on then
-		nodedef._on_move_on(pos, obj)
+	if nodedef and nodedef._on_move_in then
+		nodedef._on_move_in(pos, obj)
 	end
 
 	local underpos = 
@@ -21,17 +22,18 @@ local function processOn(obj, pos)
 	local undername = minetest.get_node(underpos).name
 	local underdef = minetest.registered_nodes[undername]
 
-	if underdef and underdef.walkable and underdef.on_step then
+	if underdef and underdef._on_move_on then
 		underdef._on_move_on(underpos, obj)
 	end
 end
 
 local function processOff(obj, pos)
+	pos = vector.round(pos)
 	local nodename = minetest.get_node(pos).name
 	local nodedef = minetest.registered_nodes[nodename]
 
-	if nodedef and not nodedef.walkable and nodedef._on_move_off then
-		nodedef._on_move_off(pos, obj)
+	if nodedef and nodedef._on_move_out then
+		nodedef._on_move_out(pos, obj)
 	end
 
 	local underpos = 
@@ -44,7 +46,7 @@ local function processOff(obj, pos)
 	local undername = minetest.get_node(underpos).name
 	local underdef = minetest.registered_nodes[undername]
 
-	if underdef and underdef.walkable and underdef.on_step then
+	if underdef and underdef._on_move_off then
 		underdef._on_move_off(underpos, obj)
 	end
 end

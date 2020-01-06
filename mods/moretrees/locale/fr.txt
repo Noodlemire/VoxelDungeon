@@ -1,0 +1,74 @@
+# Traduction par Yoan31
+# 
+
+### crafts.lua ###
+Coconut Milk = Lait de Coco
+Raw Coconut = Noix de Coco Crue
+Acorn Muffin batter = Pate à Muffins au Gland
+Acorn Muffin = Muffins au Gland
+Roasted Spruce Cone Nuts = Noix de Cône de Sapin Roties
+Roasted Pine Cone Nuts = Noix de Pomme de pin Roties
+Roasted Fir Cone Nuts = Noix de Cône de Sapin Roties
+
+### node_defs.lua ###
+Beech Tree Trunk = Tronc d'Arbre de Hêtre
+Apple Tree Trunk = Tronc d'Arbre de Pommier
+Oak Tree Trunk = Tronc d'Arbre de chêne
+Giant Sequoia Trunk = Tronc d'Arbre de Séquoia Géant
+Birch Tree Trunk = Tronc d'Arbre de bouleau
+Palm Tree Trunk = Tronc d'Arbre de Palmier
+Spruce Tree Trunk = Tronc d'Arbre d'Epicéa
+Pine Tree Trunk = Tronc d'Arbre de Pin
+Willow Tree Trunk = Tronc d'Arbre de Saule
+Rubber Tree Trunk = Tronc d'Arbre a Caoutchouc
+Jungle Tree Trunk = Tronc d'Arbre de la Jungle
+Douglas Fir Trunk = Tronc de Sapin de Douglas
+Beech Tree Planks = Planches de Hêtre
+Apple Tree Planks = Planches de Pommier
+Oak Tree Planks = Planches de Chêne
+Giant Sequoia Planks = Planches de d'Arbre de Séquoia Géant
+Birch Tree Planks = Planches d'Arbre de bouleau
+Palm Tree Planks = Planches d'Arbre de Palmier
+Spruce Tree Planks = Planches d'Arbre d'Epicéa
+Pine Tree Planks = Planches d'Arbre de Pin
+Willow Tree Planks = Planches d'Arbre de Saule
+Rubber Tree Planks = Planches d'Arbre a Caoutchouc
+Jungle Tree Planks = Planches d'Arbre de la Jungle
+Douglas Fir Planks = Planches de Sapin de Douglas
+Beech Tree Sapling = Pousse d'Arbre de Hêtre
+Apple Tree Sapling = Pousse d'Arbre de Pommier
+Oak Tree Sapling = Pousse d'Arbre de chêne
+Giant Sequoia Sapling = Pousse d'Arbre de Séquoia Géant
+Birch Tree Sapling = Pousse d'Arbre de bouleau
+Palm Tree Sapling = Pousse d'Arbre de Palmier
+Spruce Tree Sapling = Pousse d'Arbre d'Epicéa
+Pine Tree Sapling = Pousse d'Arbre de Pin
+Willow Tree Sapling = Pousse d'Arbre de Saule
+Rubber Tree Sapling = Pousse d'Arbre a Caoutchouc
+Jungle Tree Sapling = Pousse d'Arbre de la Jungle
+Douglas Fir Sapling = Pousse de Sapin de Douglas
+Beech Tree Leaves = Feuilles d'Arbre de Hêtre
+Apple Tree Leaves = Feuilles d'Arbre de Pommier
+Oak Tree Leaves = Feuilles d'Arbre de chêne
+Giant Sequoia Leaves = Feuilles d'Arbre de Séquoia Géant
+Birch Tree Leaves = Feuilles d'Arbre de bouleau
+Palm Tree Leaves = Feuilles d'Arbre de Palmier
+Spruce Tree Leaves = Feuilles d'Arbre d'Epicéa
+Pine Tree Leaves = Feuilles d'Arbre de Pin
+Willow Tree Leaves = Feuilles d'Arbre de Saule
+Rubber Tree Leaves = Feuilles d'Arbre a Caoutchouc
+Jungle Tree Leaves = Feuilles d'Arbre de la Jungle
+Douglas Fir Leaves = Feuilles de Sapin de Douglas
+
+Acorn = Gland
+Coconut = Noix de Coco
+Spruce Cone = Cône de Sapin
+Pine Cone = Pomme de Pin
+Fir Cone = Pomme de Sapin
+Jungle Sapling = Pousse d'Arbre de la Jungle
+Jungle Tree Leaves (Yellow) = Feuille d'Arbre de la Jungle (Jaune)
+Jungle Tree Leaves (Red) =  Feuille d'Arbre de la Jungle (Rouge)
+Douglas Fir Leaves (Bright) = Feuille de Sapin de Douglas (Brillant)
+Rubber Tree Trunk (Empty) = Tronc d'Arbre en Caoutchouc (Vide)
+
+[Moretrees] Loaded (2013-02-11) = 

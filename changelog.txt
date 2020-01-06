@@ -159,3 +159,71 @@ Alpha 1.3.0:
 Alpha 1.3.1:
 	Fixed:
 		Crash caused by a player being punched while wearing any kind of armor.
+
+Alpha 1.4.0:
+	New Mods:
+		biome_lib by vanessaE
+			-Dependency of moretrees
+
+		vessels by vanessaE, celeron55 (Perttu Ahola), and others
+			-Dependency of moretrees; vessel shelves can now hold potions
+
+		moretrees by vanessaE, Rogier, and Tim Huppertz
+			-Wand textures are based on some default tree types and most of the trees added by this mod
+
+	Wands:
+		A new tool type useable with right-click
+		Sprites are randomized; each type of wand is made out of a different type of wood
+		Wands have a maximum amount of charges before they have to recharge. They recharge over time, and recharge faster the more they are depleted.
+		Can be upgraded; and upgrade does different things for each wand, but the common factor is increasing max charges and instantly recharging
+		Wand damage always ignores armor
+		Most haven't been implemented yet. Those that do nothing will have a blank description.
+
+		Wand of Blast Wave: Creates a small blast that deals little damage but has strong knockback. Upgrades increase knockback.
+		Wand of Corrosion: Creates a small cloud of corrosive gas. Upgrades increase the size of the cloud created.
+		Wand of Disintegration: Shoots a short lazer that pierces all terrain and mobs, destroys flammable terrain, and grows stronger with each thing it passes through. Upgrades increase the lazer's range. There's no visual for this lazer yet.
+		Wand of Flock: Uses up all of its charges to summon a flock of magic sheep. The more charges used, the more sheep are summoned.
+		Wand of Magic Missile: Shoots a projectile with moderate damage and no special effects. Has 1 more max charge than usual
+		Wand of Vampirism: Shoots a projectile with below average damage that steals health from its target and gives half of that HP to its user.
+
+	Repair Tools:
+		These items are rare finds from chests, and are dedicated to repairing a specific type of tool. 
+		Each can be used up to 3 times before breaking, and on use will restore up to 33% of a tool's max durability.
+		There are Armorer's Kits for armor, Arcane Batteries for wands, and Whetstones for weapons.
+
+	Misc:
+		New Buff: Corrosion, damage over time that continuously increases in strength until it runs out.
+		New Buff: Recharging, cuts down on time needed for wands to recharge by 90% until it runs out.
+		New Blob: Corrosive Gas, anything caught inside is given the corrosion buff.
+		New Mob: Magic Sheep, immortal mob that does nothing for 10 seconds and then explodes.
+		New Item: Weightstone, can be used to augment a melee weapon to increase its speed or durability, at the cost of the other.
+		Implemented: Scroll of Recharging, grants to the user 20 turns of the Recharging buff
+		The bottoms of item text boxes with multi-line descriptions has been lowered to fit PixelFont better.
+		Height of thrown items has been raised slightly to better match the cursor's position.
+		Particles no longer persist after server shutdown.
+		Snow is no longer walkable.
+		Melee weapons can be used to break blocks.
+		Battleaxe and hand axe can now be used to mine wood faster.
+		Tuned down the amount of mobs that are spawned.
+		Made various adjustments to item spawning
+
+	Fixed:
+		More cases where random teleportation could put you in a wall
+		Shattered potions of purification not clearing paralytic gas
+		on_secondary_use of items not working properly when used against mobs
+		All mobs effectively having 0 armor
+		Mobs being immune to explosions
+		Mobs spawning in water/lava and having no chance at life
+		Tall grass not being destroyed properly when flooded
+		Armor not saving properly when upgraded while equpped
+		Player's speed not being updated properly after weakness wears off
+		A few cases of random crashing from events on the server not caused by players
+		Crash caused by digging or exploding a sungrass or earthroot
+		Crashed cause by player being attacked while having the herbal armor buff
+
+	Visual:
+		Various tweaking to particle behavior
+		The color of grass particles is now different based on the type of tall grass trampled
+		Added a particle effect for shattered potions
+		Added a blood burst effect when players and mobs are punched. Some mobs have different blood colors. 
+		The bleeding debuff also gets the blood visual effect.

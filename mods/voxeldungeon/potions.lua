@@ -28,7 +28,7 @@ local potion_defs =
 		drink = function(itemstack, user, pointed_thing)
 			voxeldungeon.playerhandler.changeSTR(user, 1)
 			voxeldungeon.glog.p("Newfound strength surges through your body.", user) 
-			voxeldungeon.tools.updateStrdiffArmor(user)
+			voxeldungeon.armor.updateStrdiffArmor(user)
 		end
 	},
 	{
@@ -175,7 +175,7 @@ local potion_defs =
 						local clearPos = vector.add(pos, {x = a, y = b, z = c})
 
 						if voxeldungeon.utils.directLineOfSight(pos, clearPos) then
-							voxeldungeon.blobs.clear("voxeldungeon:blob_toxicgas", clearPos)
+							voxeldungeon.blobs.clear({"voxeldungeon:blob_toxicgas", "voxeldungeon:blob_paralyticgas", "voxeldungeon:blob_corrosivegas"}, clearPos)
 						end
 					end
 				end
@@ -202,48 +202,42 @@ local colors = {"turquoise", "crimson", "azure", "jade", "golden", "magenta", "c
 
 
 
-local function default_shatter(pos, color)
-	for _, player in ipairs(voxeldungeon.utils.getPlayersInArea(pos, 20)) do
-		voxeldungeon.glog.i("The flask shatters and "..color.." liquid splashes harmlessly.", player)
-	end
-end
-
 local function register_potion(name, desc, color, drink, shatter)
+	local do_shatter = function(pos)
+		if shatter then
+			shatter(pos)
+		else
+			for _, player in ipairs(voxeldungeon.utils.getPlayersInArea(pos, 20)) do
+				voxeldungeon.glog.i("The flask shatters and "..color.." liquid splashes harmlessly.", player)
+			end
+		end
+
+		voxeldungeon.particles.burst(voxeldungeon.particles.splash, pos, 5, {color = color})
+	end
+
 	voxeldungeon.register_throwingitem("potion_"..name, "Potion of "..desc..
 								"\n \nLeft click while holding a potion to drink it."..
 								"\nRight click while holding a potion to throw it.", 
 
-	function(pos)
-		if shatter then
-			shatter(pos)
-		else
-			default_shatter(pos, color)
-		end
-	end,
+	do_shatter,
 
 	{
 		inventory_image = "voxeldungeon_item_potion_"..color..".png",
 		_cornerLR = "voxeldungeon_icon_potion_"..name..".png",
-		groups = {freezable = 1},
+		groups = {freezable = 1, vessel = 1},
 
 		on_use = function(itemstack, user)
 			if drink then
 				drink(itemstack, user)
-			elseif shatter then
-				shatter(user:get_pos())
 			else
-				default_shatter(user:get_pos(), color) 
+				do_shatter(user:get_pos())
 			end
 
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end,
 
 		on_freeze = function(user, pos)
-			if shatter then
-				shatter(pos)
-			else
-				default_shatter(pos, color)
-			end
+			do_shatter(pos)
 		end
 	})
 end

@@ -29,7 +29,7 @@ local scroll_defs =
 			local itemname = itemstack:get_name()
 			voxeldungeon.utils.take_item(user, itemstack)
 
-			voxeldungeon.itemselector.showSelector(user, "Select an item to upgrade.", function(player, item)
+			voxeldungeon.itemselector.showSelector(user, "Select an item to upgrade.", "upgradable", 1, function(player, item)
 				if item then
 					voxeldungeon.tools.upgrade(item)
 					voxeldungeon.glog.p("Your "..voxeldungeon.utils.itemShortDescription(item).." looks much better now.", player)
@@ -90,6 +90,9 @@ local scroll_defs =
 				local desc = affected[1]:get_luaentity().description or "!!!NO TEXT FOUND!!!"
 				voxeldungeon.glog.i("The scroll emits a brilliant flash of red light and the "..desc.." flees!", user)
 			else
+				for i = 1, #affected do
+					voxeldungeon.glog.i(affected[i]:get_luaentity().description or "!!!NO TEXT FOUND!!!")
+				end
 				voxeldungeon.glog.i("The scroll emits a brilliant flash of red light and the monsters flee!", user)
 			end
 
@@ -206,6 +209,7 @@ local scroll_defs =
 
 		read = function(itemstack, user, pointed_thing)
 			voxeldungeon.utils.randomTeleport(user)
+
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end
 	},
@@ -219,9 +223,11 @@ local scroll_defs =
 	},
 	{
 		name = "recharging",
-		desc = "Recharging",
+		desc = "Recharging\n \nThe raw magical power bound up in this parchment will, when released, charge up all the user's wands over time.",
 
 		read = function(itemstack, user, pointed_thing)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:recharging", user, 20)
+
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end
 	}

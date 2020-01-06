@@ -128,25 +128,29 @@ minetest.register_chatcommand("mystats", {
 	end
 })
 
-local function getDefenseOf(armor)
-	local level = armor:get_meta():get_int("voxeldungeon:level")
-
-	local def = armor:get_definition()
-	local tier = def._tier
-
-	return tier + tier * level
-end
-
 minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
 	if voxeldungeon.playerhandler.isParalyzed(hitter) then return end
 
 	local playername = player:get_player_name()
 
 	if playername then
+		if hitter:is_player() then
+			local weapon = hitter:get_wielded_item()
+			time_from_last_punch = voxeldungeon.playerhandler.getTimeFromLastPunch(hitter)
+
+			if minetest.get_item_group(weapon:get_name(), "weapon") > 0 then
+				weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, hitter, {type = "object", ref = player})
+				minetest.after(0, function() hitter:set_wielded_item(weapon) end)
+			end
+		end
+
+		local damage = voxeldungeon.utils.round(math.max(0, (tool_capabilities.damage_groups.fleshy or 1) 
+			* math.min(1, time_from_last_punch / (tool_capabilities.full_punch_interval or 1))))
+
 		local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
 		local armor = armor_inv:get_stack("armor", 1)
 		if not armor:is_empty() then
-			local defense = getDefenseOf(armor)
+			local defense = voxeldungeon.armor.getDefenseOf(armor)
 
 			damage = math.max(0, damage - defense)
 
@@ -163,7 +167,7 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 			local diff = earthroot.left() - damage
 
 			if diff >= 0 then
-				earthroot.elapsed = earthroot.elapsed + damage
+				earthroot.duration = earthroot.duration - damage
 				damage = 0
 			else
 				earthroot.detach()
@@ -180,6 +184,10 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 				damage = def._attackProc(hitter:get_luaentity(), player, damage)
 			end
 		end
+
+		voxeldungeon.particles.burst(voxeldungeon.particles.blood, player:get_pos(), 5, {
+			angle = vector.direction(hitter:get_pos(), player:get_pos())
+		})
 
 		return true
 	end
@@ -310,7 +318,7 @@ minetest.register_on_newplayer(function(player)
 	inv:add_item("main", ItemStack("voxeldungeon:ration"))
 
 	local armor = ItemStack("voxeldungeon:armor_cloth")
-	voxeldungeon.tools.updateDescriptionArmor(armor)
+	voxeldungeon.armor.updateDescription(armor)
 	inv:add_item("main", armor)
 
 	--hbhunger.hunger[player:get_player_name()] = 30

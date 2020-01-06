@@ -189,8 +189,8 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 	end
 	
 	buff.detach = function()
-		buff.on_detach(buff)
 		buff.detached = true
+		buff.on_detach(buff)
 
 		if buff.target:is_player() then
 			buff.target:hud_remove(buff.hud_image_id)
@@ -264,16 +264,22 @@ end
 
 function voxeldungeon.buffs.get_buff(name, target)
 	if not target or target == "unloaded" then return nil end
+
 	if target.object then target = target.object end
 
 	if target:is_player() then
-		return player_buffs[target:get_player_name()][name]
+		local pbuffs = player_buffs[target:get_player_name()]
+		if pbuffs[name] and pbuffs[name].detached then return nil end
+
+		return pbuffs[name]
 	else
 		local eID = entitycontrol.get_entity_id("mobs", target)
 		if not eID then return nil end
 
 		local ebuffs = entity_buffs[eID]
 		if not ebuffs then return nil end
+
+		if ebuffs[name] and ebuffs[name].detached then return nil end
 
 		return ebuffs[name]
 	end
@@ -306,6 +312,12 @@ voxeldungeon.buffs.register_buff("voxeldungeon:bleeding", {
 	do_effect = function(buff)
 		voxeldungeon.mobs.damage(buff.target, buff.left(), "bleeding")
 		buff.duration = buff.duration - math.random(0, math.ceil(buff.left() / 2))
+
+		if buff.target:is_player() then
+			voxeldungeon.particles.burst(voxeldungeon.particles.blood, buff.target:get_pos(), 5)
+		else
+			voxeldungeon.particles.burst(voxeldungeon.particles.blood, buff.target:get_pos(), 5, {color = buff.target:get_luaentity()._blood})
+		end
 	end
 })
 
@@ -336,6 +348,53 @@ voxeldungeon.buffs.register_buff("voxeldungeon:blind", {
 
 	on_detach = function(buff)
 		buff.target:hud_remove(buff.blind_hud_id)
+	end
+})
+
+voxeldungeon.buffs.register_buff("voxeldungeon:corrosion", {
+	description = "Corrosion", 
+	icon = "voxeldungeon_buff_poisoned.png^[multiply:#FF9032",
+	autoDecrement = true,
+
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
+			voxeldungeon.glog.w("You are melting!", buff.target)
+		end
+
+		local key = "voxeldungeon:corrosion_"..buff.id.."_dmg"
+
+		local dmg = voxeldungeon.storage.getNum(key)
+
+		if buff.customdata.dmg then
+			if dmg then
+				buff.customdata.dmg = math.max(buff.customdata.dmg, dmg)
+			end
+
+			voxeldungeon.storage.put(key, buff.customdata.dmg)
+			return
+		end
+
+		if dmg then
+			buff.customdata.dmg = dmg
+		else
+			buff.detach()
+		end
+	end,
+
+	do_effect = function(buff) 
+		voxeldungeon.mobs.damage(buff.target, math.floor(buff.customdata.dmg), "corrosion")
+
+		if buff.customdata.dmg < voxeldungeon.utils.getDepth(buff.target:get_pos()) / 2 + 2 then
+			buff.customdata.dmg = buff.customdata.dmg + 1
+		else
+			buff.customdata.dmg = buff.customdata.dmg + 0.5
+		end
+
+		voxeldungeon.storage.put("voxeldungeon:corrosion_"..buff.id.."_dmg", buff.customdata.dmg)
+	end,
+
+	on_detach = function(buff)
+		voxeldungeon.storage.del("voxeldungeon:corrosion_"..buff.id.."_dmg")
 	end
 })
 
@@ -386,6 +445,8 @@ voxeldungeon.buffs.register_buff("voxeldungeon:frozen", {
 			mobkit.clear_queue_high(lua)
 			buff.target:set_texture_mod("^voxeldungeon_overlay_frozen.png")
 		end
+
+		if frozen_overlay then frozen_overlay:start() end
 
 		local key = "voxeldungeon:frozen_"..buff.id.."_init"
 		if voxeldungeon.storage.getBool(key) then
@@ -621,14 +682,17 @@ voxeldungeon.buffs.register_buff("voxeldungeon:paralyzed", {
 			voxeldungeon.playerhandler.deparalyze(buff.target)
 		else
 			local lua = buff.target:get_luaentity()
-			lua.paralysis = lua.paralysis - 1
+
+			if lua then
+				lua.paralysis = lua.paralysis - 1
+			end
 		end
 	end
 })
 
 voxeldungeon.buffs.register_buff("voxeldungeon:poison", {
 	description = "Poisoned", 
-	icon = "voxeldungeon_buff_poisoned.png",
+	icon = "voxeldungeon_buff_poisoned.png^[multiply:#FF00FF",
 	autoDecrement = true,
 
 	on_attach = function(buff, first) 
@@ -640,6 +704,20 @@ voxeldungeon.buffs.register_buff("voxeldungeon:poison", {
 	do_effect = function(buff) 
 		voxeldungeon.mobs.damage(buff.target, math.ceil(buff.left() / 3), "poison")
 	end
+})
+
+voxeldungeon.buffs.register_buff("voxeldungeon:recharging", {
+	description = "Recharging", 
+	icon = "voxeldungeon_buff_recharge.png",
+	autoDecrement = true,
+
+	--See wands.lua/register_globalstep/timeToCharge
+
+	on_attach = function(buff, first) 
+		if first and buff.target:is_player() then
+			voxeldungeon.glog.i("A surge of energy courses through your body, invigorating your wands!", buff.target)
+		end
+	end,
 })
 
 voxeldungeon.buffs.register_buff("voxeldungeon:rooted", {
@@ -722,13 +800,13 @@ voxeldungeon.buffs.register_buff("voxeldungeon:weakness", {
 	on_attach = function(buff, first) 
 		if first and buff.target:is_player() then
 			voxeldungeon.glog.w("You feel weakened!", buff.target)
-			voxeldungeon.tools.updateStrdiffArmor(buff.target)
+			voxeldungeon.armor.updateStrdiffArmor(buff.target)
 		end
 	end,
 
 	on_detach = function(buff)
 		if buff.target:is_player() then
-			voxeldungeon.tools.updateStrdiffArmor(buff.target)
+			voxeldungeon.armor.updateStrdiffArmor(buff.target)
 		end
 	end
 })

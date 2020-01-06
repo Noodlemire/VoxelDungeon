@@ -105,21 +105,26 @@ end
 
 local function directLineOfSight(a, b)
 	local steps = vector.distance(a, b)
+	local nodes = {}
 
 	for i = 0, steps do
 		local c
 
 		if steps > 0 then
-			c = vector.round({
+			c = {
 				x = a.x + (b.x - a.x) * (i / steps),
 				y = a.y + (b.y - a.y) * (i / steps),
 				z = a.z + (b.z - a.z) * (i / steps),
-			})
+			}
 		else
-			c = vector.round(a)
+			c = a
 		end
 
-		if voxeldungeon.utils.solid(c) then
+		table.insert(nodes, {pos = c, node = minetest.get_node_or_nil(c)})
+	end
+
+	for i = 1, #nodes do
+		if nodes[i].node and minetest.registered_nodes[nodes[i].node.name].walkable then
 			return false
 		end
 	end
@@ -140,8 +145,20 @@ function entitycontrol.getEntitiesInArea(list, pos, radius, xray)
 	for i = 1, entitycontrol.count_entities(list) do
 		local ent = entitycontrol.get_entity(list, i)
 
-		if entitycontrol.isAlive(list, i) and vector.distance(pos, ent:get_pos()) <= radius and (xray or directLineOfSight(pos, ent:get_pos())) then
-			table.insert(ents, ent)
+		if entitycontrol.isAlive(list, i) then
+			local box = minetest.registered_entities[ent:get_luaentity().name].collisionbox
+			local floor = math.floor(box[2])
+			local height = math.ceil(box[5])
+
+			for i = floor, height do
+				local checkpos = ent:get_pos()
+				checkpos.y = checkpos.y + i
+
+				if vector.distance(pos, checkpos) <= radius and (xray or directLineOfSight(pos, checkpos)) then
+					table.insert(ents, ent)
+					break
+				end
+			end
 		end
 	end
 

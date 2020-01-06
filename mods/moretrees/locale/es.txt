@@ -1,0 +1,100 @@
+# Traducido por Carlos Barraza
+
+### crafts.lua ###
+Coconut Milk = Leche de Coco
+Raw Coconut = Coco crudo
+Acorn Muffin batter =  Masa de Mollete de Bellota
+Acorn Muffin = Mollete de Bellota
+Roasted Spruce Cone Nuts = Cono de Picea Tostado
+Roasted Pine Cone Nuts = Cono de Pino Tostado
+Roasted Fir Cone Nuts = Cono de Abeto Tostado
+Roasted Cedar Cone Nuts = Coco de Alamo Tostado
+Date = Datilera
+Date & nut snack = Datilera y Nueces
+Date-nut cake batter = Pasta de torta de Datilera
+Date-nut cake = Pastel de Datilera
+Date-nut energy bar = Barra energetica de Datilera
+
+### date_palm.lua ###
+Dates = Datilera
+Date Stem = Tallo de Datilera
+Date Flowers = Flores de Datilera
+
+### node_defs.lua ###
+Beech Tree Trunk = Tronco de Arbol de Haya
+Apple Tree Trunk = Tronco de Arbol de Manzana
+Oak Tree Trunk = Tronco de Arbol de Roble
+Giant Sequoia Trunk = Tronco de Sequoia Gigante
+Birch Tree Trunk = Tronco de Arbol de Abedul
+Palm Tree Trunk = Tronco de Palmera
+Spruce Tree Trunk = Tronco de Arbol de Abeto
+Willow Tree Trunk = Tronco de Arbol de Sauce
+Rubber Tree Trunk = Tronco de Arbol de Arbol de Goma
+Jungle Tree = Tronco de Arbol de Arbol de la Selva
+Douglas Fir Trunk = Tronco de Arbol de Abeto de Douglas
+Cedar Tree Trunk = Tronco de Arbol de Cedro
+Date Palm Tree Trunk = Tronco de Palmera Datilera
+Acacia Tree Trunk = Tronco de Arbol de Acacia
+Poplar Tree Trunk = Tronco de Arbol de Alamo
+
+Beech Tree Planks = Madera de Arbol de Haya
+Apple Tree Planks = Madera de Arbol de Manzana
+Oak Tree Planks = Madera de Arbol de Roble
+Giant Sequoia Planks = Madera de Sequoia Gigante
+Birch Tree Planks = Madera de Arbol de Abedul
+Palm Tree Planks = Madera de Palmera
+Spruce Tree Planks = Madera de Arbol de Abeto
+Willow Tree Planks = Madera de Arbol de Sauce
+Rubber Tree Planks = Madera de Arbol de Arbol de Goma
+Jungle Planks = Madera de Arbol de Arbol de la Selva
+Douglas Fir Planks = Madera de Arbol de Abeto de Douglas
+Cedar Tree Planks = Madera de Arbol de Cedro
+Date Palm Tree Planks = Madera de Palmera Datilera
+Acacia Tree Planks = Madera de Arbol de Acacia
+Poplar Tree Planks = Madera de Arbol de Alamo
+
+Beech Tree Sapling = Retoño de Arbol de Haya
+Apple Tree Sapling = Retoño de Arbol de Manzana
+Oak Tree Sapling = Retoño de Arbol de Roble
+Giant Sequoia Sapling = Retoño de Arbol de Sequoia Gigante
+Birch Tree Sapling = Retoño de Arbol de Abedul
+Palm Tree Sapling = Retoño de Palmera
+Spruce Tree Sapling = Retoño de Arbol de Abeto
+Willow Tree Sapling = Retoño de Arbol de Sauce
+Rubber Tree Sapling = Retoño de Arbol de Arbol de Goma
+Jungle Sapling = Retoño de Arbol de Arbol de la Selva
+Douglas Fir Sapling = Retoño de Arbol de Abeto de Douglas
+Cedar Tree Sapling = Retoño de Arbol de Cedro
+Date Palm Tree Tree Sapling = Retoño de Palmera Datilera
+Acacia Tree Sapling = Retoño de Arbol de Acacia
+Poplar Tree Sapling = Retoño de Arbol de Alamo
+
+Beech Tree Leaves = Hojas de Arbol de Haya
+Apple Tree Leaves = Hojas de Arbol de Manzana
+Oak Tree Leaves = Hojas de Arbol de Roble
+Giant Sequoia Leaves = Hojas de Sequoia Gigante
+Birch Tree Leaves = Hojas de Arbol de Abedul
+Palm Tree Leaves = Hojas de Palmera
+Spruce Tree Leaves = Hojas de Arbol de Abeto
+Willow Tree Leaves = Hojas de Arbol de Sauce
+Rubber Tree Leaves = Hojas de Arbol de Arbol de Goma
+Jungle Leaves = Hojas de Arbol de Arbol de la Selva
+Douglas Fir Leaves = Hojas de Arbol de Abeto de Douglas
+Cedar Tree Leaves = Hojas de Arbol de Cedro
+Date Palm Tree Tree Leaves = Hojas de Palmera Datilera
+Acacia Tree Leaves = Hojas de Arbol de Acacia
+Poplar Tree Leaves = Hojas de Arbol de Alamo
+
+Acorn = Bellota
+Coconut = Coco
+Spruce Cone = Coco de Picea
+Pine Cone = Coco de Pino
+Fir Cone = Coco de Abeto
+Cedar Cone = Coco de Alamo
+Jungle Sapling = Retoño de Arbol de la Selva
+Jungle Tree Leaves (Yellow) = Hojas de Arbol de la Selva (Amarilla)
+Jungle Tree Leaves (Red) = Hojas de Arbol de la Selva (Roja)
+Douglas Fir Leaves (Bright) = Hojas de Arbol de Abeto de Douglas (Brillante)
+Rubber Tree Trunk (Empty) = Tronco de Arbol de Goma (Vacio)
+
+[Moretrees] Loaded (2013-02-11) = [Masarboles] Cargado

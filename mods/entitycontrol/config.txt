@@ -23,3 +23,4 @@ voxeldungeon:thief
 voxeldungeon:skeleton
 voxeldungeon:bee
 voxeldungeon:mimic
+voxeldungeon:sheep

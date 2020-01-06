@@ -43,12 +43,16 @@ function voxeldungeon.register_throwingitem(name, desc, callback, itemdef, entde
 	end
 
 	itemdef.on_secondary_use = function(itemstack, user, pointed_thing)
-		local pos = vector.add(user:get_pos(), {x=0, y=1, z=0})
-		local offset = vector.multiply(user:get_look_dir(), 2)
+		if pointed_thing.type == "object" then
+			callback(get_pointed_pos(pointed_thing))
+		else
+			local pos = vector.add(user:get_pos(), {x=0, y=1.5, z=0})
+			local offset = vector.multiply(user:get_look_dir(), 2)
 
-		local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrown_"..name)
-		projectile:set_velocity(vector.multiply(offset, 8))
-		projectile:set_acceleration({x = 0, y = -12, z = 0})
+			local projectile = minetest.add_entity(vector.add(pos, offset), "voxeldungeon:thrown_"..name)
+			projectile:set_velocity(vector.multiply(offset, 8))
+			projectile:set_acceleration({x = 0, y = -12, z = 0})
+		end
 
 		return voxeldungeon.utils.take_item(user, itemstack)
 	end
@@ -121,6 +125,48 @@ minetest.override_item("default:torch", {
 	description = voxeldungeon.utils.itemDescription("Torch\n \nIt's an indispensable item in the underground, which is notorious for its poor ambient lighting."),
 	inventory_image = "voxeldungeon_item_torch.png",
 	wield_image = "voxeldungeon_item_torch.png"
+})
+
+
+
+local function do_augment(itemstack, user, augment_type)
+	local itemname = itemstack:get_name()
+	voxeldungeon.utils.take_item(user, itemstack)
+
+	voxeldungeon.itemselector.showSelector(user, "Choose a weapon to augment for "..augment_type..".", "weapon", 1, function(player, choice)
+		if choice and choice:get_meta():get_string("voxeldungeon:augment") ~= augment_type then
+			choice:get_meta():set_string("voxeldungeon:augment", augment_type)
+			voxeldungeon.glog.h("You augmented your "..voxeldungeon.utils.itemShortDescription(choice).." to increase "..augment_type..".", player)
+			voxeldungeon.weapons.updateDescription(choice)
+		else
+			if choice then
+				voxeldungeon.glog.i("That weapon is already augmented for "..augment_type..".")
+			end
+
+			voxeldungeon.utils.return_item(user, itemname)
+		end
+
+		return choice
+	end)
+
+	return itemstack
+end
+
+minetest.register_craftitem("voxeldungeon:weightstone", {
+	description = voxeldungeon.utils.itemDescription("Weightstone\n \nUsing a weightstone, you can augment your melee weapon to increase its speed or durability. However, this increase must come at the cost of the other.\n \nLeft click while holding it to augment for speed.\nRight click while holding it to augment for durability."),
+	inventory_image = "voxeldungeon_tool_weightstone.png",
+
+	on_use = function(itemstack, user, pointed_thing)
+		return do_augment(itemstack, user, "speed")
+	end,
+
+	on_place = function(itemstack, user, pointed_thing)
+		return do_augment(itemstack, user, "durability")
+	end,
+
+	on_secondary_use = function(itemstack, user, pointed_thing)
+		return do_augment(itemstack, user, "durability")
+	end,
 })
 
 

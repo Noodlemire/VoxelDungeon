@@ -62,8 +62,8 @@ local armorChances = {
 }
 
 local foodChances = {
-	["voxeldungeon:ration"] = 60,
-	["voxeldungeon:pasty"] = 15,
+	["voxeldungeon:ration"] = 4,
+	["voxeldungeon:pasty"] = 1,
 }
 
 local goldChances = {
@@ -71,8 +71,9 @@ local goldChances = {
 }
 
 local miscChances = {
-	["voxeldungeon:bomb"] = 40,
-	["voxeldungeon:honeypot"] = 20,
+	["voxeldungeon:bomb"] = 4,
+	["voxeldungeon:honeypot"] = 2,
+	["voxeldungeon:weightstone"] = 1,
 }
 
 local oreChances = {
@@ -135,42 +136,63 @@ local oreChances = {
 
 local potionChances = {
 	["voxeldungeon:potion_strength"] = 0,
-	["voxeldungeon:potion_toxicgas"] = 30,
-	["voxeldungeon:potion_liquidflame"] = 30,
+	["voxeldungeon:potion_toxicgas"] = 3,
+	["voxeldungeon:potion_liquidflame"] = 3,
 	["voxeldungeon:potion_might"] = 0,
-	["voxeldungeon:potion_frost"] = 30,
-	["voxeldungeon:potion_healing"] = 60,
-	["voxeldungeon:potion_invisibility"] = 20,
-	["voxeldungeon:potion_levitation"] = 20,
-	["voxeldungeon:potion_mindvision"] = 40,
-	["voxeldungeon:potion_paralyticgas"] = 20,
-	["voxeldungeon:potion_purification"] = 20,
-	["voxeldungeon:potion_haste"] = 20,
+	["voxeldungeon:potion_frost"] = 3,
+	["voxeldungeon:potion_healing"] = 6,
+	["voxeldungeon:potion_invisibility"] = 2,
+	["voxeldungeon:potion_levitation"] = 2,
+	["voxeldungeon:potion_mindvision"] = 4,
+	["voxeldungeon:potion_paralyticgas"] = 2,
+	["voxeldungeon:potion_purification"] = 2,
+	["voxeldungeon:potion_haste"] = 2,
+}
+
+local repairChances = {
+	["voxeldungeon:repair_armor"] = 1,
+	["voxeldungeon:repair_wand"] = 1,
+	["voxeldungeon:repair_weapon"] = 1,
 }
 
 local scrollChances = {
 	["voxeldungeon:scroll_upgrade"] = 0,
-	["voxeldungeon:scroll_identify"] = 60,
-	["voxeldungeon:scroll_removecurse"] = 40,
+	["voxeldungeon:scroll_identify"] = 6,
+	["voxeldungeon:scroll_removecurse"] = 4,
 	["voxeldungeon:scroll_enchantment"] = 0,
-	["voxeldungeon:scroll_terror"] = 20,
-	["voxeldungeon:scroll_rage"] = 20,
-	["voxeldungeon:scroll_magicmapping"] = 20,
-	["voxeldungeon:scroll_lullaby"] = 20,
-	["voxeldungeon:scroll_psionicblast"] = 10,
-	["voxeldungeon:scroll_teleportation"] = 30,
-	["voxeldungeon:scroll_mirrorimage"] = 30,
-	["voxeldungeon:scroll_recharging"] = 30,
+	["voxeldungeon:scroll_terror"] = 2,
+	["voxeldungeon:scroll_rage"] = 2,
+	["voxeldungeon:scroll_magicmapping"] = 2,
+	["voxeldungeon:scroll_lullaby"] = 2,
+	["voxeldungeon:scroll_psionicblast"] = 1,
+	["voxeldungeon:scroll_teleportation"] = 3,
+	["voxeldungeon:scroll_mirrorimage"] = 3,
+	["voxeldungeon:scroll_recharging"] = 3,
 }
 
 local seedChances = {
-	["voxeldungeon:plant_earthroot"] = 40,
-	["voxeldungeon:plant_fadeleaf"] = 40,
-	["voxeldungeon:plant_firebloom"] = 50,
-	["voxeldungeon:plant_icecap"] = 40,
-	["voxeldungeon:plant_sorrowmoss"] = 50,
-	["voxeldungeon:plant_sungrass"] = 30,
+	["voxeldungeon:plant_earthroot"] = 4,
+	["voxeldungeon:plant_fadeleaf"] = 4,
+	["voxeldungeon:plant_firebloom"] = 5,
+	["voxeldungeon:plant_icecap"] = 4,
+	["voxeldungeon:plant_sorrowmoss"] = 5,
+	["voxeldungeon:plant_sungrass"] = 3,
 	["voxeldungeon:plant_rotberry"] = 0,
+}
+
+local wandChances = {
+	["voxeldungeon:wand_avalanche"] = 4,
+	["voxeldungeon:wand_blastwave"] = 3,
+	["voxeldungeon:wand_corrosion"] = 4,
+	["voxeldungeon:wand_disintegration"] = 4,
+	["voxeldungeon:wand_fireblast"] = 3,
+	["voxeldungeon:wand_flock"] = 3,
+	["voxeldungeon:wand_frost"] = 3,
+	["voxeldungeon:wand_lightning"] = 4,
+	["voxeldungeon:wand_magicmissile"] = 4,
+	["voxeldungeon:wand_prismaticlight"] = 3,
+	["voxeldungeon:wand_regrowth"] = 3,
+	["voxeldungeon:wand_vampirism"] = 2,
 }
 
 local weaponChances = {
@@ -304,12 +326,24 @@ function voxeldungeon.generator.randomPotion()
 	return {name = voxeldungeon.utils.randomChances(potionChances), count = 1, wear = 0, metadata = ""}
 end
 
+function voxeldungeon.generator.randomRepair()
+	return {name = voxeldungeon.utils.randomChances(repairChances), count = 1, wear = 0, metadata = ""}
+end
+
 function voxeldungeon.generator.randomScroll()
 	return {name = voxeldungeon.utils.randomChances(scrollChances), count = 1, wear = 0, metadata = ""}
 end
 
 function voxeldungeon.generator.randomSeed()
 	return {name = voxeldungeon.utils.randomChances(seedChances), count = 1, wear = 0, metadata = ""}
+end
+
+function voxeldungeon.generator.randomWand()
+	local wand = voxeldungeon.utils.randomChances(wandChances)
+
+	local itemstack = ItemStack({name = wand, count = 1, wear = 0, metadata = ""})
+	voxeldungeon.tools.setLevelOf(itemstack, randomLevel())
+	return itemstack
 end
 
 function voxeldungeon.generator.randomWeapon(t)
@@ -328,18 +362,32 @@ local function allChances(t)
 
 	return {
 		[voxeldungeon.generator.randomArmor] = voxeldungeon.utils.sumChances(armorChances[tier]),
-		[voxeldungeon.generator.randomFood] = voxeldungeon.utils.sumChances(foodChances),
+		[voxeldungeon.generator.randomFood] = voxeldungeon.utils.sumChances(foodChances) * 15,
 		[voxeldungeon.generator.randomGold] = voxeldungeon.utils.sumChances(goldChances),
-		[voxeldungeon.generator.randomMisc] = voxeldungeon.utils.sumChances(miscChances),
+		[voxeldungeon.generator.randomMisc] = voxeldungeon.utils.sumChances(miscChances) * 25,
 		[voxeldungeon.generator.randomOre] = voxeldungeon.utils.sumChances(oreChances[tier]),
-		[voxeldungeon.generator.randomPotion] = voxeldungeon.utils.sumChances(potionChances),
-		[voxeldungeon.generator.randomScroll] = voxeldungeon.utils.sumChances(scrollChances),
-		[voxeldungeon.generator.randomSeed] = voxeldungeon.utils.sumChances(seedChances),
-		[voxeldungeon.generator.randomWeapon] = voxeldungeon.utils.sumChances(weaponChances[tier]) * 0.5,
+		[voxeldungeon.generator.randomPotion] = voxeldungeon.utils.sumChances(potionChances) * 10,
+		[voxeldungeon.generator.randomRepair] = voxeldungeon.utils.sumChances(repairChances),
+		[voxeldungeon.generator.randomScroll] = voxeldungeon.utils.sumChances(scrollChances) * 10,
+		[voxeldungeon.generator.randomSeed] = voxeldungeon.utils.sumChances(seedChances) * 10,
+		[voxeldungeon.generator.randomWand] = voxeldungeon.utils.sumChances(wandChances) * 3,
+		[voxeldungeon.generator.randomWeapon] = voxeldungeon.utils.sumChances(weaponChances[tier]) * 0.4,
 	}
 end
 
 function voxeldungeon.generator.random(t)
+	--[[voxeldungeon.glog.i("armor: "..voxeldungeon.utils.sumChances(armorChances[t]))
+	voxeldungeon.glog.i("food: "..voxeldungeon.utils.sumChances(foodChances) * 15)
+	voxeldungeon.glog.i("gold: "..voxeldungeon.utils.sumChances(goldChances))
+	voxeldungeon.glog.i("misc: "..voxeldungeon.utils.sumChances(miscChances) * 25)
+	voxeldungeon.glog.i("ore: "..voxeldungeon.utils.sumChances(oreChances[t]))
+	voxeldungeon.glog.i("potion: "..voxeldungeon.utils.sumChances(potionChances) * 10)
+	voxeldungeon.glog.i("repair: "..voxeldungeon.utils.sumChances(repairChances))
+	voxeldungeon.glog.i("scroll: "..voxeldungeon.utils.sumChances(scrollChances) * 10)
+	voxeldungeon.glog.i("seed: "..voxeldungeon.utils.sumChances(seedChances) * 10)
+	voxeldungeon.glog.i("wand: "..voxeldungeon.utils.sumChances(wandChances) * 3)
+	voxeldungeon.glog.i("weapon: "..voxeldungeon.utils.sumChances(weaponChances[t]) * 0.4)--]]
+
 	return voxeldungeon.utils.randomChances(allChances(t))(t)
 end
 
@@ -381,7 +429,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 	end,
 
 	on_rightclick = function(pos, node, clicker)
-		if math.random(4) == 1 then
+		if math.random(4, 4) == 1 then
 			minetest.remove_node(pos)
 			minetest.add_entity(pos, "voxeldungeon:mimic")
 
@@ -409,6 +457,9 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 
 				if not clicker then
 					inv:set_stack("main", slotNum, voxeldungeon.generator.random(tier))
+				elseif voxeldungeon.generator.limited_drops[name].repair >= voxeldungeon.generator.drop_limits.repair then
+					voxeldungeon.generator.limited_drops[name].repair = 0
+					inv:set_stack("main", slotNum, voxeldungeon.generator.randomRepair())
 				elseif voxeldungeon.generator.limited_drops[name].sou[tier] < voxeldungeon.generator.drop_limits.sou[tier] and 
 						math.random(12) == 1 then
 					inv:set_stack("main", slotNum, ItemStack("voxeldungeon:scroll_upgrade"))
@@ -422,6 +473,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 					inv:set_stack("main", slotNum, ItemStack("voxeldungeon:potion_might"))
 					voxeldungeon.generator.limited_drops[name].pom[tier] = voxeldungeon.generator.limited_drops[name].pom[tier] + 1
 				else
+					voxeldungeon.generator.limited_drops[name].repair = voxeldungeon.generator.limited_drops[name].repair + 1
 					inv:set_stack("main", slotNum, voxeldungeon.generator.random(tier))
 				end
 			end
@@ -437,6 +489,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 
 
 voxeldungeon.generator.drop_limits = {
+	repair = 24,
 	sou = {3, 3, 3, 3, 3},
 	pos = {2, 2, 2, 2, 2},
 	pom = {5, 5, 5, 5, 5},
@@ -445,12 +498,16 @@ voxeldungeon.generator.drop_limits = {
 function voxeldungeon.generator.saveDropLimits(player)
 	local name = player:get_player_name()
 
+	voxeldungeon.storage.put(name.."_repair", voxeldungeon.generator.limited_drops[name].repair)
+
 	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].sou) do
 		voxeldungeon.storage.put(name.."_sou_"..i, v)
 	end
+
 	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].pos) do
 		voxeldungeon.storage.put(name.."_pos_"..i, v)
 	end
+
 	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].pom) do
 		voxeldungeon.storage.put(name.."_pom_"..i, v)
 	end
@@ -462,6 +519,8 @@ minetest.register_on_joinplayer(function(player)
 	voxeldungeon.generator.limited_drops[name] = {}
 
 	if voxeldungeon.storage.getBool("loadedDropLimits_"..name) then
+		voxeldungeon.generator.limited_drops[name].repair = voxeldungeon.storage.getNum(name.."_repair") or 0
+
 		voxeldungeon.generator.limited_drops[name].sou = {}
 		voxeldungeon.generator.limited_drops[name].pos = {}
 		voxeldungeon.generator.limited_drops[name].pom = {}
@@ -472,6 +531,7 @@ minetest.register_on_joinplayer(function(player)
 			voxeldungeon.generator.limited_drops[name].pom[i] = voxeldungeon.storage.getNum(name.."_pom_"..i)
 		end
 	else
+		voxeldungeon.generator.limited_drops[name].repair = 0
 		voxeldungeon.generator.limited_drops[name].sou = {0, 0, 0, 0, 0}
 		voxeldungeon.generator.limited_drops[name].pos = {0, 0, 0, 0, 0}
 		voxeldungeon.generator.limited_drops[name].pom = {0, 0, 0, 0, 0}
@@ -479,15 +539,5 @@ minetest.register_on_joinplayer(function(player)
 		voxeldungeon.generator.saveDropLimits(player)
 
 		voxeldungeon.storage.put("loadedDropLimits_"..name, true)
-	end
-end)
-
-minetest.register_on_leaveplayer(function(player)
-	--saveDropLimits(player:get_player_name())
-end)
-
-minetest.register_on_shutdown(function()
-	for _, v in pairs(minetest.get_connected_players()) do
-		--saveDropLimits(v:get_player_name())
 	end
 end)

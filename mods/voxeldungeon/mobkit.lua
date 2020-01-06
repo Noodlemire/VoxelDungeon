@@ -102,8 +102,10 @@ function voxeldungeon.mobkit.punch_attack(self, prty, tgtobj)
 	mobkit.queue_high(self, func, prty)
 end
 
-local function HPChecks(self)
+function voxeldungeon.mobkit.HPChecks(self)
 	if self.hp <= 0 then
+		local drops = {}
+
 		if not mobkit.recall(self, "died") then
 			local def = minetest.registered_entities[self.name]
 
@@ -117,7 +119,8 @@ local function HPChecks(self)
 							itemdrop = dropname(voxeldungeon.utils.getChapter(self.object:get_pos()))
 						end
 
-						minetest.add_item(self.object:get_pos(), itemdrop)
+						--minetest.add_item(self.object:get_pos(), itemdrop)
+						table.insert(drops, itemdrop:to_string())
 					end
 				end
 			end
@@ -131,7 +134,8 @@ local function HPChecks(self)
 
 		mobkit.clear_queue_high(self)
 		mobkit.hq_die(self)
-		return true
+
+		return drops
 	end
 end
 
@@ -139,9 +143,16 @@ function voxeldungeon.mobkit.landBrain(self)
 	-- vitals should be checked every step
 	mobkit.vitals(self)
 
-	if HPChecks(self) then return end
+	local drops = voxeldungeon.mobkit.HPChecks(self)
+	if drops then
+		for _, item in ipairs(drops) do
+			minetest.add_item(self.object:get_pos(), ItemStack(item))
+		end
 
-	if self.paralysis and self.paralysis > 0 then return end
+		return 
+	end
+
+	if (self.groups and self.groups.does_nothing) or (self.paralysis and self.paralysis > 0) then return end
 
 	--decision making needn't happen every engine step
 	if mobkit.timer(self,1) then 
@@ -175,7 +186,7 @@ function voxeldungeon.mobkit.skyBrain(self)
 	-- vitals should be checked every step
 	mobkit.vitals(self)
 
-	local doReturn = HPChecks(self)
+	local doReturn = voxeldungeon.mobkit.HPChecks(self)
 	if doReturn then return end
 
 	--decision making needn't happen every engine step

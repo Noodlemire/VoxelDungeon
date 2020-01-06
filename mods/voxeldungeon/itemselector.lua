@@ -33,7 +33,21 @@ local function tileToString(tile)
 	end
 end
 
-function voxeldungeon.itemselector.showSelector(player, label, callback)
+local function get_item_groups(itemname, groups)
+	local val = 0
+
+	if type(groups) == "table" then
+		for _, group in ipairs(groups) do
+			val = val + minetest.get_item_group(itemname, group)
+		end
+	else
+		val = minetest.get_item_group(itemname, groups)
+	end
+
+	return val
+end
+
+function voxeldungeon.itemselector.showSelector(player, label, selectable, select_goal, callback)
 	local fs = "size[8,5]label[0,0;"..label.."]"
 	local inv = player:get_inventory()
 	local playername = player:get_player_name()
@@ -45,7 +59,7 @@ function voxeldungeon.itemselector.showSelector(player, label, callback)
 
 		if item:is_empty() then
 			fs = fs.."image["..x..","..y..";1,1;voxeldungeon_ui_itemslot.png]"
-		elseif minetest.get_item_group(item:get_name(), "upgradable") > 0 then
+		elseif get_item_groups(item:get_name(), selectable) >= select_goal then
 			fs = fs.."item_image_button["..x..","..y..";1,1;"..item:get_name()..";slot_button_"..i..";]"..
 				"tooltip[slot_button_"..i..";"..voxeldungeon.utils.itemShortDescription(item).."]"
 		else
@@ -68,9 +82,12 @@ function voxeldungeon.itemselector.showSelector(player, label, callback)
 
 	if armor:is_empty() then
 		fs = fs.."image[7,0;1,1;voxeldungeon_ui_itemslot.png]"
-	else
+	elseif get_item_groups(armor:get_name(), selectable) >= select_goal then
 		fs = fs.."item_image_button[7,0;1,1;"..armor:get_name()..";slot_button_a;]"..
 				"tooltip[slot_button_a;"..voxeldungeon.utils.itemShortDescription(armor).."]"
+	else
+		fs = fs.."image[7,0;1,1;voxeldungeon_ui_itemslot.png]"..
+				"image[7,0;1,1;"..armor:get_definition().inventory_image.."^voxeldungeon_overlay_greyout.png]"
 	end
 
 	stored_callbacks[playername] = callback
@@ -79,7 +96,6 @@ function voxeldungeon.itemselector.showSelector(player, label, callback)
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
-	--minetest.log("player received field from "..formname)
 	if formname == "voxeldungeon:itemselector" then
 		local playername = player:get_player_name()
 
@@ -102,7 +118,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 				local change = stored_callbacks[playername](player, armor_inv:get_stack("armor", 1))
 				armor_inv:set_stack("armor", 1, change)
 
-				voxeldungeon.tools.updateStrdiffArmor(player)
+				voxeldungeon.armor.updateStrdiffArmor(player)
+
+				armor:save_armor_inventory(player)
 			end
 		end
 

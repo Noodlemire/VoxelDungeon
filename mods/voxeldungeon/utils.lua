@@ -157,6 +157,44 @@ function voxeldungeon.utils.angleBetweenPoints(x1, x2, y1, y2)
 	return angle
 end
 
+function voxeldungeon.utils.blastwave(pos, dir, level)
+	local affected = voxeldungeon.utils.getLivingInArea(pos, 1.5, true)
+
+	for _, obj in ipairs(affected) do
+		local force = (level + 5) * 2
+		local dmg = 2 + level
+
+		if vector.distance(pos, obj:get_pos()) >= 0.5 then
+			dir = vector.direction(pos, obj:get_pos())
+			force = force / 2
+			dmg = dmg / 2
+		end
+
+		if obj:is_player() then
+			obj:add_player_velocity(vector.multiply(vector.normalize(dir), force))
+		else
+			obj:set_velocity(vector.multiply(vector.normalize(dir), force))
+			mobkit.clear_queue_high(obj:get_luaentity())
+		end
+
+		voxeldungeon.mobs.damage(obj, dmg, "poison")
+	end
+
+	voxeldungeon.particles.blastwave(pos)
+end
+
+function voxeldungeon.utils.canDig(pos)
+	local node = minetest.get_node_or_nil(pos)
+
+	if node then
+		local nodedef = minetest.registered_nodes[node.name]
+
+		if minetest.get_item_group(node.name, "immortal") == 0 and nodedef.can_dig(pos) then
+			return true
+		end
+	end
+end
+
 function voxeldungeon.utils.countTableEntries(table)
 	local count = 0
 
@@ -165,34 +203,6 @@ function voxeldungeon.utils.countTableEntries(table)
 	end
 
 	return count
-end
-
-function voxeldungeon.utils.cubesIntersect(v1a, v1b, v2a, v2b)
-	if v1a.x > v1b.x then v1a.x, v1b.x = voxeldungeon.utils.swap(v1a.x, v1b.x) end
-	if v1a.y > v1b.y then v1a.y, v1b.y = voxeldungeon.utils.swap(v1a.y, v1b.y) end
-	if v1a.z > v1b.z then v1a.z, v1b.z = voxeldungeon.utils.swap(v1a.z, v1b.z) end
-	if v2a.x > v2b.x then v2a.x, v2b.x = voxeldungeon.utils.swap(v2a.x, v2b.x) end
-	if v2a.y > v2b.y then v2a.y, v2b.y = voxeldungeon.utils.swap(v2a.y, v2b.y) end
-	if v2a.z > v2b.z then v2a.z, v2b.z = voxeldungeon.utils.swap(v2a.z, v2b.z) end
-
-	local comparisons = 
-	{
-		v1b.x <= v2a.x,
-		v1b.y <= v2a.y,
-		v1b.z <= v2a.z,
-		v1a.x >= v2b.x,
-		v1a.y >= v2b.y,
-		v1a.z >= v2b.z,
-	}
-
-	local overlaps = 0
-	for _, v in ipairs(comparisons) do
-		if v then
-			overlaps = overlaps + 1
-		end
-	end
-
-	return overlaps >= 3
 end
 
 function voxeldungeon.utils.deepCloneTable(obj)
@@ -212,27 +222,38 @@ function voxeldungeon.utils.deepCloneTable(obj)
 end
 
 function voxeldungeon.utils.directLineOfSight(a, b)
-	local steps = vector.distance(a, b)
+	local nodes = voxeldungeon.utils.findNodesInLine(a, b)
 
-	for i = 0, steps do
-		local c
-
-		if steps > 0 then
-			c = vector.round({
-				x = a.x + (b.x - a.x) * (i / steps),
-				y = a.y + (b.y - a.y) * (i / steps),
-				z = a.z + (b.z - a.z) * (i / steps),
-			})
-		else
-			c = vector.round(a)
-		end
-
-		if voxeldungeon.utils.solid(c) then
+	for i = 1, #nodes do
+		if voxeldungeon.utils.solid(nodes[i].pos) then
 			return false
 		end
 	end
 
 	return true
+end
+
+function voxeldungeon.utils.findNodesInLine(a, b)
+	local steps = vector.distance(a, b)
+	local nodes = {}
+
+	for i = 0, steps do
+		local c
+
+		if steps > 0 then
+			c = {
+				x = a.x + (b.x - a.x) * (i / steps),
+				y = a.y + (b.y - a.y) * (i / steps),
+				z = a.z + (b.z - a.z) * (i / steps),
+			}
+		else
+			c = a
+		end
+
+		table.insert(nodes, {pos = c, node = minetest.get_node_or_nil(c)})
+	end
+
+	return nodes
 end
 
 function voxeldungeon.utils.gate(min, val, max)
@@ -261,16 +282,28 @@ function voxeldungeon.utils.getDepth(pos)
 	return voxeldungeon.utils.gate(0, depth, 25)
 end
 
+function voxeldungeon.utils.getLivingInArea(pos, radius, xray)
+	local players = voxeldungeon.utils.getPlayersInArea(pos, radius, xray)
+	local result = entitycontrol.getEntitiesInArea("mobs", pos, radius, xray)
+
+	for _, p in ipairs(players) do
+		table.insert(result, p)
+	end
+
+	return result
+end
+
 function voxeldungeon.utils.getPlayersInArea(pos, radius, xray)
 	local players = {}
 
 	for _, plr in pairs(minetest.get_connected_players()) do
 		local plrpos = plr:get_pos()
 		if plrpos then
-			plrpos.y = plrpos.y + 1
+			local plrpos2 = {x = plrpos.x, y = plrpos.y + 1, z = plrpos.z}
 
-			if vector.distance(pos, plrpos) <= radius and 
-				(xray or voxeldungeon.buffs.get_buff("voxeldungeon:mindvision", plr) or voxeldungeon.utils.directLineOfSight(pos, plrpos)) then
+			if (vector.distance(pos, plrpos) <= radius or vector.distance(pos, plrpos2) <= radius) and 
+					(xray or voxeldungeon.buffs.get_buff("voxeldungeon:mindvision", plr) 
+					or voxeldungeon.utils.directLineOfSight(pos, plrpos) or voxeldungeon.utils.directLineOfSight(pos, plrpos2)) then
 				table.insert(players, plr)
 			end
 		end
@@ -303,15 +336,21 @@ function voxeldungeon.utils.itemDescription(desc)
 		end
 	end
 
-	return string.sub(result, 1, string.len(result)-1)
+	return result.." "
 end
 
 function voxeldungeon.utils.itemShortDescription(item)
 	local level = item:get_meta():get_int("voxeldungeon:level")
 
-	if level and level > 0 then
+	if minetest.get_item_group(item:get_name(), "upgradable") > 0 then
 		local desc = minetest.registered_items[item:get_name()].description
-		return desc.." +"..level
+
+		local lvlstr = ""
+		if level > 0 then
+			lvlstr = " +"..level
+		end
+
+		return desc..lvlstr
 	else
 		return voxeldungeon.utils.splitstring(item:get_description(), '\n')[1]
 	end
@@ -367,6 +406,8 @@ function voxeldungeon.utils.randomDecimal(upper, lower)
 	upper = upper or 1
 	lower = lower or 0
 
+	if upper < lower then upper, lower = voxeldungeon.utils.swap(upper, lower) end
+
 	return lower + (math.random(0, 10000) / 10000) * (upper - lower)
 end
 
@@ -406,6 +447,7 @@ function voxeldungeon.utils.randomTeleport(obj)
 		})
 
 		if obj:is_player() then
+			voxeldungeon.glog.i("Chose "..minetest.get_node(obj:get_pos()).name)
 			voxeldungeon.glog.i("In the blink of an eye, you are teleported another location.", obj)
 		end
 	elseif obj:is_player() then
@@ -432,6 +474,17 @@ function voxeldungeon.utils.randomItem(invref, listname)
 	end
 end
 
+function voxeldungeon.utils.removeSpaces(str)
+	local words = voxeldungeon.utils.splitstring(str, ' ')
+	local mashed = ""
+
+	for _, w in ipairs(words) do
+		mashed = mashed..w
+	end
+
+	return mashed
+end
+
 function voxeldungeon.utils.round(num)
 	return math.floor(num + .5)
 end
@@ -447,21 +500,18 @@ function voxeldungeon.utils.shallowCloneTable(table)
 end
 
 function voxeldungeon.utils.solid(pos)
-	pos = vector.round(pos)
-
-	local node = minetest.get_node_or_nil(pos)
+	local node = minetest.get_node(pos)
 	
-	if not node then return true end
+	if not node or node.name == "ignore" then return true end
 	
 	local nodedef = minetest.registered_nodes[node.name]
 	
-	return (node.name ~= "air" and node.name ~= "ignore" and nodedef and nodedef.walkable)
+	return (not nodedef or nodedef.walkable)
 end
 
 function voxeldungeon.utils.splitstring(input, sep)
-        if not sep then
-                sep = "%s"
-        end
+        input = input or "!!!NO TEXT FOUND!!!"
+	sep = sep or "%s"
 
         local t = {}
         for str in string.gmatch(input, "([^"..sep.."]+)") do
@@ -509,6 +559,13 @@ function voxeldungeon.utils.return_item(player, itemstack)
 	return itemstack
 end
 
-function voxeldungeon.utils.tohex(decimal)
-	return string.format("%x", decimal)
+function voxeldungeon.utils.tohex(byte)
+	byte = voxeldungeon.utils.round(voxeldungeon.utils.gate(0, byte, 255))
+	local hex = string.format("%x", byte)
+
+	if string.len(hex) == 1 then
+		return "0"..hex
+	else
+		return hex
+	end
 end

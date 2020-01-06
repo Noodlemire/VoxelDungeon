@@ -32,7 +32,7 @@ function voxeldungeon.register_plant(name, desc, activate)
 		minetest.set_node(pos, {name = "voxeldungeon:sewers_shortgrass"})
 		activate(pos, obj)
 		check_foilage(pos)
-		voxeldungeon.particles.burst("grass", pos, 6)
+		voxeldungeon.particles.burst(voxeldungeon.particles.grass, pos, 6)
 	end
 	
 	minetest.register_node("voxeldungeon:plant_"..name,
@@ -50,13 +50,13 @@ function voxeldungeon.register_plant(name, desc, activate)
 		drop = {},
 		floodable = true,
 		
-		after_dig_node = do_activate,
-		on_blast = do_activate,
-		_on_move_on = do_activate
+		after_dig_node = function(pos) do_activate(pos) end,
+		on_blast = function(pos) do_activate(pos) end,
+		_on_move_in = do_activate
 	})
 end
 
-function voxeldungeon.register_foilage(name, desc, trampled)
+function voxeldungeon.register_foilage(name, desc, trampled, ch)
 	local do_activate = function(pos, obj)
 		minetest.set_node(pos, {name = "voxeldungeon:"..trampled})
 		check_foilage(pos)
@@ -69,8 +69,8 @@ function voxeldungeon.register_foilage(name, desc, trampled)
 		if math.random(6) == 1 then
 			minetest.add_item(pos, {name = "voxeldungeon:dew"})
 		end
-		
-		voxeldungeon.particles.burst("grass", pos, 4)
+
+		voxeldungeon.particles.burst(voxeldungeon.particles.grass, pos, 4, {chapter = ch})
 	end
 	
 	local place_top = function(pos)
@@ -140,7 +140,8 @@ function voxeldungeon.register_foilage(name, desc, trampled)
 		
 		after_dig_node = do_activate,
 		on_blast = do_activate,
-		_on_move_on = do_activate
+		on_flood = do_activate,
+		_on_move_in = do_activate
 	})
 	
 	minetest.register_node("voxeldungeon:foilage_"..name.."_top",
@@ -158,16 +159,17 @@ function voxeldungeon.register_foilage(name, desc, trampled)
 		
 		after_dig_node = check_foilage,
 		on_blast = check_foilage,
-		_on_move_on = check_foilage
+		on_flood = minetest.dig_node,
+		_on_move_in = check_foilage,
 	})
 end
 
 
 
 voxeldungeon.register_plant("earthroot", "Earthroot\n \nWhen a creature touches an Earthroot, its roots create a kind of natural armor around it, which absorb all damage until they break.", function(pos, obj)
-	if obj:is_player() then
+	if obj and obj:is_player() then
 		voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_armor", obj,
-			voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT - 1)
+			voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT)
 	end
 end)
 
@@ -253,23 +255,22 @@ voxeldungeon.register_plant("sorrowmoss", "Sorrowmoss\n \nA Sorrowmoss is a flow
 		end
 	end
 
-	voxeldungeon.particles.burst("poison", pos, 3)
+	voxeldungeon.particles.burst(voxeldungeon.particles.poison, pos, 3)
 end)
 
 voxeldungeon.register_plant("sungrass", "Sungrass\n \nSungrass is renowned for its sap's healing properties, though the user must stand still for it to work.", function(pos, obj)
-	if obj:is_player() then
-		voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_healing", obj,
-			voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT)
+	if obj and obj:is_player() then
+		voxeldungeon.buffs.attach_buff("voxeldungeon:herbal_healing", obj, voxeldungeon.playerhandler.playerdata[obj:get_player_name()].HT)
 	end
 	
-	voxeldungeon.particles.factory("shaft", vector.add(pos, {x=0,y=1,z=0}), 3, 1.2)
+	voxeldungeon.particles.factory(voxeldungeon.particles.light, vector.add(pos, {x=0,y=1,z=0}), 3, 1.2)
 end)
 
-voxeldungeon.register_foilage("sewers_tallgrass", "Sewer Tall Grass", "sewers_shortgrass")
-voxeldungeon.register_foilage("prisons_tallgrass", "Prison Tall Grass", "prisons_shortgrass")
-voxeldungeon.register_foilage("caves_tallgrass", "Cave Tall Grass", "caves_shortgrass")
-voxeldungeon.register_foilage("cities_tallgrass", "City Tall Grass", "cities_shortgrass")
-voxeldungeon.register_foilage("halls_tallgrass", "Hall Tall Grass", "halls_shortgrass")
+voxeldungeon.register_foilage("sewers_tallgrass", "Sewer Tall Grass", "sewers_shortgrass", "sewers")
+voxeldungeon.register_foilage("prisons_tallgrass", "Prison Tall Grass", "prisons_shortgrass", "prisons")
+voxeldungeon.register_foilage("caves_tallgrass", "Cave Tall Grass", "caves_shortgrass", "caves")
+voxeldungeon.register_foilage("cities_tallgrass", "City Tall Grass", "cities_shortgrass", "cities")
+voxeldungeon.register_foilage("halls_tallgrass", "Hall Tall Grass", "halls_shortgrass", "halls")
 
 
 
