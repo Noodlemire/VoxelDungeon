@@ -44,7 +44,7 @@ register_food("pasty", {description = "Pasty\n \nThis is an authentic Cornish pa
 register_food("mystery_meat", {
 	description = "Mystery Meat\n \nEat at your own risk!", 
 	foodval = 4, 
-	groups = {freezable = 1},
+	groups = {freezable = 1, flammable = 1},
 
 	on_eat = function(itemstack, user) 
 		local effect = math.random(3)
@@ -58,7 +58,21 @@ register_food("mystery_meat", {
 		end
 	end,
 
-	on_freeze = function(user, pos)
+	on_burn = function(pos, user)
+		if not user then
+			minetest.add_item(pos, ItemStack("voxeldungeon:chargrilled_meat"))
+		elseif user:is_player() then
+			local chargrilled = user:get_inventory():add_item("main", ItemStack("voxeldungeon:chargrilled_meat"))
+
+			if chargrilled and not chargrilled:is_empty() then
+				minetest.add_item(user:get_pos(), chargrilled)
+			end
+		else
+			mobkit.remember(user:get_luaentity(), "stolen", "voxeldungeon:chargrilled_meat")
+		end
+	end,
+
+	on_freeze = function(pos, user)
 		if not user then
 			minetest.add_item(pos, ItemStack("voxeldungeon:frozen_carpaccio"))
 		elseif user:is_player() then

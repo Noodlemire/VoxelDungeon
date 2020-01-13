@@ -407,30 +407,19 @@ local function register_trap(name, desc, on_trigger)
 	end
 end
 
+register_trap("fire", "Fire", function(pos, obj)
+	pos = vector.round(pos)
+
+	for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
+		voxeldungeon.blobs.seed("fire", vector.add(pos, n), 2)
+	end
+end)
+
 register_trap("gripping", "Gripping", function(pos, obj)
 	local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
 
 	voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", obj, damage)
 	voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", obj, 10)
-	--[[for i = 1, entitycontrol.count_entities("mobs") do
-		local e = entitycontrol.get_entity("mobs", i)
-
-		if entitycontrol.isAlive("mobs", i) and vector.equals(vector.round(e:get_pos()), pos) then
-			local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
-
-			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", e, damage)
-			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", e, 10)
-		end
-	end
-
-	for _, p in ipairs(minetest.get_connected_players()) do
-		if p:get_pos() and vector.equals(vector.round(p:get_pos()), pos) then
-			local damage = math.max(0, voxeldungeon.utils.getDepth(pos) + 3)
-
-			voxeldungeon.buffs.attach_buff("voxeldungeon:bleeding", p, damage)
-			voxeldungeon.buffs.attach_buff("voxeldungeon:crippled", p, 10)
-		end
-	end--]]
 end)
 
 register_trap("paralyticgas", "Paralytic Gas", function(pos, obj)

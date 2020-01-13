@@ -67,8 +67,13 @@ function voxeldungeon.armor.updateStrdiffArmor(player)
 	end
 end
 
-function voxeldungeon.armor.register_armor(name, desc, tier, info)
+function voxeldungeon.armor.register_armor(name, desc, tier, info, groups)
 	info = info or "!!!NO TEXT FOUND!!!"
+
+	groups = groups or {}
+	groups.armor_torso = 1
+	groups.armor = 1
+	groups.upgradable = 1
 
 	armor:register_armor("voxeldungeon:armor_"..name, {
 		description = desc,
@@ -76,7 +81,7 @@ function voxeldungeon.armor.register_armor(name, desc, tier, info)
 
 		armor_groups = {fleshy = 0},
 
-		groups = {armor_torso = 1, armor = 1, upgradable = 1},
+		groups = groups,
 
 		_info = info,
 		_tier = tier,
@@ -98,11 +103,11 @@ end
 
 
 
-voxeldungeon.armor.register_armor("cloth", "Cloth Armor", 1, "This lightweight armor offers basic protection.")
+voxeldungeon.armor.register_armor("cloth", "Cloth Armor", 1, "This lightweight armor offers basic protection.", {flammable = 1})
 voxeldungeon.armor.register_armor("cactus", "Cactus Armor", 1, "A rather unconventional type of armor, which offers more discomfort than it does defense.")
-voxeldungeon.armor.register_armor("wood", "Wood Armor", 1, "Constructed from wooden planks, this boxy clothing will offer a small level of protection against monster attacks.")
+voxeldungeon.armor.register_armor("wood", "Wood Armor", 1, "Constructed from wooden planks, this boxy clothing will offer a small level of protection against monster attacks.", {flammable = 1})
 
-voxeldungeon.armor.register_armor("leather", "Leather Armor", 2, "Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.")
+voxeldungeon.armor.register_armor("leather", "Leather Armor", 2, "Armor made from tanned monster hide. Not as light as cloth armor but provides better protection.", {flammable = 1})
 voxeldungeon.armor.register_armor("steel", "Steel Armor", 2, "A set of solid steel armor, albiet a thin one with no padding. While it won't compare to professionally made plate armor, it does offer decent protection.")
 
 voxeldungeon.armor.register_armor("mail", "Mail Armor", 3, "Interlocking metal links make for a tough but flexible suit of armor.")

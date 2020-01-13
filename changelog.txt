@@ -227,3 +227,36 @@ Alpha 1.4.0:
 		Added a particle effect for shattered potions
 		Added a blood burst effect when players and mobs are punched. Some mobs have different blood colors. 
 		The bleeding debuff also gets the blood visual effect.
+
+Alpha 1.5.0:
+	Bones:
+		Now, when a player dies, only a portion of the player's inventories are put in the bone block.
+		This includes "unique" items (currently just the dew vial), and items that the player was wielding or wearing when they died
+		Also, out of the remaining items, ~25% of them will be randomly preserved. The rest will vanish forever.
+		If the player's inventory is completely empty, instead of placing no bones at all, the bone block will be given 1 gold.
+
+	Fire:
+		New blob: Fire, rapidly consumes flammable nodes and leaves behind embers. Ignites creatures that touch it. Burns up flammable item entities.
+		New buff: burning, deals damage over time, spreads more fire to where its target moves, burns up flammable items in the target's inventory.
+		(Note that due to an engine bug, the player's particle effect is invisible in third person mode; https://github.com/minetest/minetest/pull/8342)
+		The fire buff will replace the frozen buff when attached, and vice versa
+		Items that made fire nodes before (Fireblooms, Flind And Steel, TNT, etc.), now make fire blobs instead.
+		Implemented Potions of Liquid Flame: Create a 3x3x3 cube of fire blob
+		New Trap: Fire Trap, does the same as a shattered potion of liquid flame
+		The fire buff will replace frozen, and vice versa
+		Potions of frost now extinguish fire blobs upon shattering.
+		Various items such as bombs, dew, scrolls, and a few armors are now considered flammable.
+
+	Misc:
+		New Item: Dew Vial; Dew is stored in this if it's not full already. You can drink it to restore your HP. Only uses as much dew as needed.
+		New Item: Ankh, revives a dead player at full HP as long as it's in said player's inventory, at the cost of most of the user's inventory
+		New Item: Blessed Ankh, created by crafting a full Dew Vial with an Ankh. Revives the player without any items lost (except the ankh itself)
+		Healing from dew is now 5% of max HP, up from 1
+
+	Fixed:
+		When a player would try to augment an item that already had the same augment, that would be announced to the whole server.
+		Mimics never spawning from newly opened chests
+		Crash caused by throwing a potion of frost at ignore
+
+	Visual:
+		Particles no longer become black when inside nodes.

@@ -252,6 +252,7 @@ local function register_scroll(name, desc, rune, use)
 		description = voxeldungeon.utils.itemDescription("Scroll of "..desc.."\n \nRight click while holding a scroll to read it."),
 		inventory_image = "voxeldungeon_item_scroll_"..rune..".png",
 		_cornerLR = "voxeldungeon_icon_scroll_"..name..".png",
+		groups = {flammable = 1},
 
 		on_place = do_read,
 		on_secondary_use = do_read

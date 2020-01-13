@@ -256,6 +256,10 @@ function voxeldungeon.utils.findNodesInLine(a, b)
 	return nodes
 end
 
+function voxeldungeon.utils.flammable(pos)
+	return minetest.get_item_group(minetest.get_node(pos).name, "flammable") > 0
+end
+
 function voxeldungeon.utils.gate(min, val, max)
 	if min and val and val < min then
 		return min
@@ -411,9 +415,13 @@ function voxeldungeon.utils.randomDecimal(upper, lower)
 	return lower + (math.random(0, 10000) / 10000) * (upper - lower)
 end
 
-function voxeldungeon.utils.randomObject(table)
-	if #table > 0 then
-		return table[math.random(#table)]
+function voxeldungeon.utils.randomObject(tbl, remove)
+	if #tbl > 0 then
+		if remove then
+			return table.remove(tbl, math.random(#tbl))
+		else
+			return tbl[math.random(#tbl)]
+		end
 	end
 
 	return nil
@@ -485,8 +493,12 @@ function voxeldungeon.utils.removeSpaces(str)
 	return mashed
 end
 
-function voxeldungeon.utils.round(num)
-	return math.floor(num + .5)
+function voxeldungeon.utils.round(num, factor)
+	if factor then
+		return voxeldungeon.utils.round(num * factor) / factor
+	else
+		return math.floor(num + .5)
+	end
 end
 
 function voxeldungeon.utils.shallowCloneTable(table)
@@ -568,4 +580,8 @@ function voxeldungeon.utils.tohex(byte)
 	else
 		return hex
 	end
+end
+
+function voxeldungeon.utils.wet(pos)
+	return minetest.get_item_group(minetest.get_node(pos).name, "water") > 0
 end

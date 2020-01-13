@@ -171,6 +171,16 @@ local place_on_list = {
 	voxeldungeon.utils.halls_valid_ground,
 }
 
+local function traplist(stringFormat, ch)
+	local trapnames = {"fire", "gripping", "paralyticgas", "poisondart", "teleport", "toxicgas"}
+	local result = {}
+
+	for _, t in ipairs(trapnames) do
+		table.insert(result, stringFormat:format(namelist[ch], t))
+	end
+
+	return result
+end
 for i = 1, 5 do
 	minetest.register_decoration({
 		name = "voxeldungeon:traps_"..namelist[i],
@@ -192,9 +202,7 @@ for i = 1, 5 do
 		y_min = -31000,
 
 		flags = "all_floors",
-		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping", "voxeldungeon:trap_"..namelist[i].."_paralyticgas", 
-				"voxeldungeon:trap_"..namelist[i].."_poisondart", "voxeldungeon:trap_"..namelist[i].."_teleport", 
-				"voxeldungeon:trap_"..namelist[i].."_toxicgas"}
+		decoration = traplist("voxeldungeon:trap_%s_%s", i)
 	})
 
 	minetest.register_decoration({
@@ -217,9 +225,7 @@ for i = 1, 5 do
 		y_min = -31000,
 
 		flags = "all_floors",
-		decoration = {"voxeldungeon:trap_"..namelist[i].."_gripping_hidden", "voxeldungeon:trap_"..namelist[i].."_paralyticgas_hidden", 
-				"voxeldungeon:trap_"..namelist[i].."_poisondart_hidden", "voxeldungeon:trap_"..namelist[i].."_teleport_hidden", 
-				"voxeldungeon:trap_"..namelist[i].."_toxicgas_hidden"}
+		decoration = traplist("voxeldungeon:trap_%s_%s_hidden", i)
 	})
 
 

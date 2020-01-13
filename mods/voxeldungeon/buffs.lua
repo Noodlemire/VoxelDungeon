@@ -351,6 +351,124 @@ voxeldungeon.buffs.register_buff("voxeldungeon:blind", {
 	end
 })
 
+voxeldungeon.buffs.register_buff("voxeldungeon:burning", {
+	description = "Burning", 
+	icon = "voxeldungeon_buff_burning.png",
+	autoDecrement = true,
+
+	on_attach = function(buff, first) 
+		if first then
+			if buff.target:is_player() then
+				voxeldungeon.glog.w("You are burning!", buff.target)
+			end
+
+			voxeldungeon.particles.emitter(voxeldungeon.particles.fire, buff.target, 1)
+			voxeldungeon.buffs.detach_buff("voxeldungeon:frozen", buff.target)
+		end
+
+		if not buff.target:is_player() then
+			local lua = buff.target:get_luaentity()
+			local itemstring = mobkit.recall(lua, "stolen")
+
+			if lua.name == "voxeldungeon:thief" and itemstring then
+				local item = ItemStack(itemstring)
+
+				if  minetest.get_item_group(item:get_name(), "flammable") > 0 then
+					mobkit.forget(lua, "stolen")
+
+					local on_burn = minetest.registered_items[item:get_name()].on_burn
+					if on_burn then
+						on_burn(buff.target:get_pos(), buff.target)
+					end
+				end
+			end
+		end
+	end,
+
+	do_effect = function(buff) 
+		voxeldungeon.mobs.damage(buff.target, voxeldungeon.utils.getChapter(buff.target:get_pos()), "fire")
+		voxeldungeon.particles.emitter(voxeldungeon.particles.fire, buff.target, 1)
+
+		if buff.target:is_player() and math.random(5) == 1 then
+			local burnables = {}
+			local inv = buff.target:get_inventory()
+
+			for i = 1, inv:get_size("main") do
+				local item = inv:get_stack("main", i)
+
+				if not item:is_empty() and minetest.get_item_group(item:get_name(), "flammable") > 0 then
+					table.insert(burnables, {list = "main", index = i, burnt = item})
+				end
+			end
+
+			for i = 1, inv:get_size("craft") do
+				local item = inv:get_stack("craft", i)
+
+				if not item:is_empty() and minetest.get_item_group(item:get_name(), "flammable") > 0 then
+					table.insert(burnables, {list = "craft", index = i, burnt = item})
+				end
+			end
+
+			if #burnables > 0 then
+				local burnt = voxeldungeon.utils.randomObject(burnables)
+
+				voxeldungeon.glog.i("Your "..voxeldungeon.utils.itemShortDescription(burnt.burnt).." burns up!", buff.target)
+
+				local on_burn = minetest.registered_items[burnt.burnt:get_name()].on_burn
+				if on_burn then
+					on_burn(buff.target:get_pos(), buff.target)
+				end
+
+				voxeldungeon.utils.take_item(buff.target, burnt.burnt)
+				inv:set_stack(burnt.list, burnt.index, burnt.burnt)
+			end
+		end
+	end
+})
+minetest.register_globalstep(function()
+	for _, player in pairs(minetest.get_connected_players()) do
+		for i = 1, 2 do
+			local pos = player:get_pos()
+			pos.y = pos.y + 1
+
+			if voxeldungeon.buffs.get_buff("voxeldungeon:burning", player) then 
+				if voxeldungeon.utils.wet(pos) then
+					voxeldungeon.buffs.detach_buff("voxeldungeon:burning", player)
+				elseif voxeldungeon.utils.flammable(pos) then
+					voxeldungeon.blobs.seed("fire", pos, 2)
+				end
+			elseif voxeldungeon.blobs.get("voxeldungeon:blob_fire", pos) > 0 then
+				voxeldungeon.buffs.attach_buff("voxeldungeon:burning", player, 8)
+			end
+		end
+	end
+
+	for i = 1, entitycontrol.count_entities("mobs") do
+		local ent = entitycontrol.get_entity("mobs", i)
+
+		if entitycontrol.isAlive("mobs", i) then
+			local box = minetest.registered_entities[ent:get_luaentity().name].collisionbox
+			local floor = math.floor(box[2])
+			local height = math.ceil(box[5])
+
+			for i = floor, height do
+				local pos = ent:get_pos()
+				pos.y = pos.y + i
+
+				if voxeldungeon.buffs.get_buff("voxeldungeon:burning", ent) then
+					if voxeldungeon.utils.wet(pos) then
+						voxeldungeon.buffs.detach_buff("voxeldungeon:burning", ent)
+					elseif voxeldungeon.utils.flammable(pos) then
+						voxeldungeon.blobs.seed("fire", pos, 2)
+					end
+				elseif voxeldungeon.blobs.get("voxeldungeon:blob_fire", pos) > 0 then
+					voxeldungeon.buffs.attach_buff("voxeldungeon:burning", ent, 8)
+				end
+			end
+		end
+	end
+end)
+
 voxeldungeon.buffs.register_buff("voxeldungeon:corrosion", {
 	description = "Corrosion", 
 	icon = "voxeldungeon_buff_poisoned.png^[multiply:#FF9032",
@@ -475,14 +593,6 @@ voxeldungeon.buffs.register_buff("voxeldungeon:frozen", {
 				end
 			end
 
-			for i = 1, inv:get_size("craftresult") do
-				local item = inv:get_stack("craftresult", i)
-
-				if not item:is_empty() and minetest.get_item_group(item:get_name(), "freezable") > 0 then
-					table.insert(freezables, {list = "craftresult", index = i, frozen = item})
-				end
-			end
-
 			if #freezables > 0 then
 				local frozen = voxeldungeon.utils.randomObject(freezables)
 
@@ -490,7 +600,7 @@ voxeldungeon.buffs.register_buff("voxeldungeon:frozen", {
 
 				local on_freeze = minetest.registered_items[frozen.frozen:get_name()].on_freeze
 				if on_freeze then
-					on_freeze(buff.target, buff.target:get_pos())
+					on_freeze(buff.target:get_pos(), buff.target)
 				end
 
 				voxeldungeon.utils.take_item(buff.target, frozen.frozen)
@@ -508,11 +618,13 @@ voxeldungeon.buffs.register_buff("voxeldungeon:frozen", {
 
 					local on_freeze = minetest.registered_items[item:get_name()].on_freeze
 					if on_freeze then
-						on_freeze(buff.target, buff.target:get_pos())
+						on_freeze(buff.target:get_pos(), buff.target)
 					end
 				end
 			end
 		end
+
+		voxeldungeon.buffs.detach_buff("voxeldungeon:burning", buff.target)
 	end,
 
 	do_effect = function(buff)

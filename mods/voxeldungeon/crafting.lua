@@ -201,6 +201,56 @@ minetest.register_craft({
 
 
 
+--Ankh Blessing
+
+minetest.register_craft({
+	type = "shapeless",
+	output = "voxeldungeon:ankh_blessed",
+	recipe = {"voxeldungeon:ankh", "voxeldungeon:dewvial"}
+})
+
+minetest.register_on_craft(function(itemstack, player, old_craft_grid, craft_inv)
+	if itemstack:get_name() == "voxeldungeon:ankh_blessed" then
+		local vial
+		local ankh
+
+		for i = 1, #old_craft_grid do
+			local itemstack = old_craft_grid[i]
+
+			if itemstack:get_name() == "voxeldungeon:dewvial" then
+				vial = {i = i, item = itemstack}
+			elseif itemstack:get_name() == "voxeldungeon:ankh" then
+				ankh = {i = i, item = itemstack}
+			end
+		end
+
+		if not vial or not ankh then return itemstack end
+
+		if vial.item:get_meta():get_int("voxeldungeon:dew") == 20 then
+			local newvial = ItemStack("voxeldungeon:dewvial")
+			voxeldungeon.items.update_vial_description(newvial)
+			craft_inv:set_stack("craft", vial.i, newvial)
+
+			voxeldungeon.glog.h("You bless the ankh with clean water.")
+
+			return itemstack
+		else
+			craft_inv:set_stack("craft", ankh.i, ankh.item)
+			craft_inv:set_stack("craft", vial.i, vial.item)
+
+			voxeldungeon.glog.w("You need a full dew vial to bless your ankh.", player)
+
+			return ItemStack("")
+		end
+	end
+
+	return itemstack
+end)
+
+
+
+--Misc
+
 minetest.register_craft({
 	type = "cooking",
 	output = "voxeldungeon:cooked_meat",

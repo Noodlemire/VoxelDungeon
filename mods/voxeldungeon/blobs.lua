@@ -73,14 +73,15 @@ function voxeldungeon.blobs.register(name, def)
 		
 		blob.timer = TIMESCALE
 
-		if blob.volume > 0 then
+		--if blob.volume > 0 then
+		if blob.posses.size() > 0 then
 			blob.volume = 0
 
-			blob.evolve()
+			blob:evolve()
 
 			if blob.effectTerr then
 				for i = 1, blob.posses.size() do
-					blob.effectTerr(blob, blob.posses.getVector(i), blob.posses.getValue(i))
+					blob:effectTerr(blob.posses.getVector(i), blob.posses.getValue(i))
 				end
 			end
 
@@ -91,7 +92,7 @@ function voxeldungeon.blobs.register(name, def)
 						local val = blob.posses.get(pos) or 0
 
 						if val > 0 then
-							blob.effectObj(blob, pos, val, player)
+							blob:effectObj(pos, val, player)
 						end
 					end
 				end
@@ -104,7 +105,7 @@ function voxeldungeon.blobs.register(name, def)
 						local val = blob.posses.get(pos) or 0
 
 						if val > 0 then
-							blob.effectObj(blob, pos, val, entity)
+							blob:effectObj(pos, val, entity)
 						end
 					end
 				end
@@ -115,7 +116,7 @@ function voxeldungeon.blobs.register(name, def)
 		voxeldungeon.storage.put(name.."_volume", blob.volume)
 	end
 
-	blob.evolve = blob.evolve or function()
+	blob.evolve = blob.evolve or function(blob)
 		local offload = expandUpon(blob.posses, blob.spreadCondition)
 
 		for i = 1, offload.size() do
@@ -200,7 +201,7 @@ function voxeldungeon.blobs.clear(names, pos)
 end
 
 function voxeldungeon.blobs.get(name, pos)
-	return voxeldungeon.blobs.registered_blobs[name].posses.get(pos) or 0
+	return voxeldungeon.blobs.registered_blobs[name].posses.get(vector.round(pos)) or 0
 end
 
 
@@ -220,25 +221,90 @@ voxeldungeon.blobs.register("corrosivegas", {
 		voxeldungeon.buffs.attach_buff("voxeldungeon:corrosion", obj, 2, {dmg = math.floor(amount / 25)})
 	end
 })
---[[
-voxeldungeon.blobs.register("fire", 
-	function(pos)
-		local node = minetest.get_node_or_nil(pos)
-		return true--node and minetest.get_item_group(node.name, "flammable") >= 1
-	end, 
 
-	function(blob, pos, amount, objs)
-		for _, obj in ipairs(objs) do
-			if obj:is_player() then
-				obj:set_hp(obj:get_hp() - 2)
-			else
-				voxeldungeon.mobs.damage(obj, 2, "fire")
+voxeldungeon.blobs.register("fire", { 
+	spreadCondition = function(pos)
+		local node = minetest.get_node(pos)
+		local near_fire = false
+
+		for _, offset in ipairs(voxeldungeon.utils.NEIGHBORS7) do
+			local pos_o = vector.add(pos, offset)
+			local node_o = minetest.get_node(pos_o)
+
+			if minetest.get_item_group(node_o.name, "water") > 0 then 
+				return false 
+			elseif voxeldungeon.blobs.get("voxeldungeon:blob_fire", pos_o) > 0 and minetest.get_item_group(node_o.name, "flammable") > 0 then 
+				near_fire = true 
 			end
 		end
-		
-		voxeldungeon.particles.factory("flame", pos, 1, TIMESCALE)
+
+		if near_fire then return true end
+
+		return voxeldungeon.blobs.get("voxeldungeon:blob_fire", pos) > 0 or minetest.get_item_group(node.name, "flammable") > 0
+	end,
+
+	evolve = function(blob)
+		local offload = expandUpon(blob.posses, blob.spreadCondition)
+
+		for i = 1, offload.size() do
+			local p = offload.getVector(i)
+
+			if p then
+				if minetest.get_node(p).name ~= "ignore" then
+					if blob.spreadCondition(p) then
+						local value = voxeldungeon.blobs.get("voxeldungeon:blob_fire", p) - 1
+
+						if value == 0 then
+							local node = minetest.get_node_or_nil(p)
+							if node and minetest.get_item_group(node.name, "flammable") >= 1 then
+								local on_burn = minetest.registered_nodes[node.name].on_burn
+
+								if on_burn then 
+									on_burn(p)
+								else
+									minetest.remove_node(p)
+									minetest.punch_node(p)
+									minetest.place_node(p, {name = "voxeldungeon:embers"})
+								end
+							end
+
+							offload.del(p)
+						else
+							if value < 0 then 
+								value = 2
+							end
+
+							offload.set(p, value)
+							blob.volume = blob.volume + value
+						end		
+					else
+						offload.del(p)
+					end
+				else
+					local value = blob.posses.get(p) or 0
+					offload.set(p, value)
+					blob.volume = blob.volume + value
+				end
+			end
+		end
+
+		for i = offload.size(), 1, -1 do
+			if offload.getValue(i) == 0 then
+				offload.del(offload.getVector(i))
+			end
+		end
+
+		blob.posses = offload
+	end,
+
+	effectTerr = function(blob, pos, amount, objs)
+		voxeldungeon.particles.fire(pos)
+	end,
+
+	effectObj = function(blob, pos, amount, obj)
+		voxeldungeon.buffs.attach_buff("voxeldungeon:burning", obj, 8)
 	end
-)--]]
+})
 
 voxeldungeon.blobs.register("paralyticgas", {
 	spreadCondition = function(pos)

@@ -41,14 +41,14 @@ local potion_defs =
 	},
 	{
 		name = "liquidflame",
-		desc = "Liquid Flame",
+		desc = "Liquid Flame\n \nThis flask contains an unstable compound which will burst violently into flame upon exposure to open air.",
 
 		shatter = function(pos)
-			--[[for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
-				local f = vector.add(pos, n)
+			pos = vector.round(pos)
 
-				voxeldungeon.blobs.seed("fire", f, 200)
-			end--]]
+			for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
+				voxeldungeon.blobs.seed("fire", vector.add(pos, n), 2)
+			end
 		end
 	},
 	{
@@ -69,6 +69,8 @@ local potion_defs =
 			for _, n in ipairs(voxeldungeon.utils.NEIGHBORS27) do
 				local pos = vector.add(vector.round(p), n)
 
+				voxeldungeon.blobs.clear("voxeldungeon:blob_fire", pos)
+
 				for _, p in pairs(minetest.get_connected_players()) do
 					if vector.equals(vector.round(p:get_pos()), pos) then
 						voxeldungeon.buffs.attach_buff("voxeldungeon:frozen", p, math.random(10, 15))
@@ -86,7 +88,7 @@ local potion_defs =
 								local on_freeze = minetest.registered_items[item:get_name()].on_freeze
 
 								if on_freeze then
-									on_freeze(nil, pos)
+									on_freeze(pos)
 								end
 
 								e:remove()
@@ -97,7 +99,7 @@ local potion_defs =
 					end
 				end
 
-				local node = minetest.get_node_or_nil(pos)
+				local node = minetest.get_node(pos)
 				if minetest.get_item_group(node.name, "water") > 0 then
 					minetest.place_node(pos, {name="default:ice"})
 				elseif node.name == "default:lava_source" then
@@ -236,7 +238,7 @@ local function register_potion(name, desc, color, drink, shatter)
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end,
 
-		on_freeze = function(user, pos)
+		on_freeze = function(pos, user)
 			do_shatter(pos)
 		end
 	})

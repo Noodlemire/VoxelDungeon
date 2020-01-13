@@ -71,9 +71,10 @@ local goldChances = {
 }
 
 local miscChances = {
-	["voxeldungeon:bomb"] = 4,
-	["voxeldungeon:honeypot"] = 2,
-	["voxeldungeon:weightstone"] = 1,
+	["voxeldungeon:ankh"] = 1,
+	["voxeldungeon:bomb"] = 8,
+	["voxeldungeon:honeypot"] = 4,
+	["voxeldungeon:weightstone"] = 2,
 }
 
 local oreChances = {
@@ -364,7 +365,7 @@ local function allChances(t)
 		[voxeldungeon.generator.randomArmor] = voxeldungeon.utils.sumChances(armorChances[tier]),
 		[voxeldungeon.generator.randomFood] = voxeldungeon.utils.sumChances(foodChances) * 15,
 		[voxeldungeon.generator.randomGold] = voxeldungeon.utils.sumChances(goldChances),
-		[voxeldungeon.generator.randomMisc] = voxeldungeon.utils.sumChances(miscChances) * 25,
+		[voxeldungeon.generator.randomMisc] = voxeldungeon.utils.sumChances(miscChances) * 15,
 		[voxeldungeon.generator.randomOre] = voxeldungeon.utils.sumChances(oreChances[tier]),
 		[voxeldungeon.generator.randomPotion] = voxeldungeon.utils.sumChances(potionChances) * 10,
 		[voxeldungeon.generator.randomRepair] = voxeldungeon.utils.sumChances(repairChances),
@@ -429,7 +430,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 	end,
 
 	on_rightclick = function(pos, node, clicker)
-		if math.random(4, 4) == 1 then
+		if math.random(1, 4) == 1 then
 			minetest.remove_node(pos)
 			minetest.add_entity(pos, "voxeldungeon:mimic")
 
@@ -457,17 +458,27 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 
 				if not clicker then
 					inv:set_stack("main", slotNum, voxeldungeon.generator.random(tier))
+
 				elseif voxeldungeon.generator.limited_drops[name].repair >= voxeldungeon.generator.drop_limits.repair then
 					voxeldungeon.generator.limited_drops[name].repair = 0
 					inv:set_stack("main", slotNum, voxeldungeon.generator.randomRepair())
+
+				elseif voxeldungeon.generator.limited_drops[name].vial < voxeldungeon.generator.drop_limits.vial then
+					local vial = ItemStack("voxeldungeon:dewvial")
+					voxeldungeon.items.update_vial_description(vial)
+					inv:set_stack("main", slotNum, vial)
+					voxeldungeon.generator.limited_drops[name].vial = voxeldungeon.generator.limited_drops[name].vial + 1
+
 				elseif voxeldungeon.generator.limited_drops[name].sou[tier] < voxeldungeon.generator.drop_limits.sou[tier] and 
 						math.random(12) == 1 then
 					inv:set_stack("main", slotNum, ItemStack("voxeldungeon:scroll_upgrade"))
 					voxeldungeon.generator.limited_drops[name].sou[tier] = voxeldungeon.generator.limited_drops[name].sou[tier] + 1
+
 				elseif voxeldungeon.generator.limited_drops[name].pos[tier] < voxeldungeon.generator.drop_limits.pos[tier] and 
 						math.random(12) == 1 then
 					inv:set_stack("main", slotNum, ItemStack("voxeldungeon:potion_strength"))
 					voxeldungeon.generator.limited_drops[name].pos[tier] = voxeldungeon.generator.limited_drops[name].pos[tier] + 1
+
 				elseif voxeldungeon.generator.limited_drops[name].pom[tier] < voxeldungeon.generator.drop_limits.pom[tier] and 
 						math.random(12) == 1 then
 					inv:set_stack("main", slotNum, ItemStack("voxeldungeon:potion_might"))
@@ -489,6 +500,7 @@ minetest.register_node("voxeldungeon:dormant_chest", {
 
 
 voxeldungeon.generator.drop_limits = {
+	vial = 1,
 	repair = 24,
 	sou = {3, 3, 3, 3, 3},
 	pos = {2, 2, 2, 2, 2},
@@ -498,6 +510,7 @@ voxeldungeon.generator.drop_limits = {
 function voxeldungeon.generator.saveDropLimits(player)
 	local name = player:get_player_name()
 
+	voxeldungeon.storage.put(name.."_vial", voxeldungeon.generator.limited_drops[name].vial)
 	voxeldungeon.storage.put(name.."_repair", voxeldungeon.generator.limited_drops[name].repair)
 
 	for i, v in ipairs(voxeldungeon.generator.limited_drops[name].sou) do
@@ -518,26 +531,18 @@ minetest.register_on_joinplayer(function(player)
 	
 	voxeldungeon.generator.limited_drops[name] = {}
 
-	if voxeldungeon.storage.getBool("loadedDropLimits_"..name) then
-		voxeldungeon.generator.limited_drops[name].repair = voxeldungeon.storage.getNum(name.."_repair") or 0
+	voxeldungeon.generator.limited_drops[name].vial = voxeldungeon.storage.getNum(name.."_vial") or 0
+	voxeldungeon.generator.limited_drops[name].repair = voxeldungeon.storage.getNum(name.."_repair") or 0
 
-		voxeldungeon.generator.limited_drops[name].sou = {}
-		voxeldungeon.generator.limited_drops[name].pos = {}
-		voxeldungeon.generator.limited_drops[name].pom = {}
+	voxeldungeon.generator.limited_drops[name].sou = {}
+	voxeldungeon.generator.limited_drops[name].pos = {}
+	voxeldungeon.generator.limited_drops[name].pom = {}
 
-		for i = 1, 5 do
-			voxeldungeon.generator.limited_drops[name].sou[i] = voxeldungeon.storage.getNum(name.."_sou_"..i)
-			voxeldungeon.generator.limited_drops[name].pos[i] = voxeldungeon.storage.getNum(name.."_pos_"..i)
-			voxeldungeon.generator.limited_drops[name].pom[i] = voxeldungeon.storage.getNum(name.."_pom_"..i)
-		end
-	else
-		voxeldungeon.generator.limited_drops[name].repair = 0
-		voxeldungeon.generator.limited_drops[name].sou = {0, 0, 0, 0, 0}
-		voxeldungeon.generator.limited_drops[name].pos = {0, 0, 0, 0, 0}
-		voxeldungeon.generator.limited_drops[name].pom = {0, 0, 0, 0, 0}
-
-		voxeldungeon.generator.saveDropLimits(player)
-
-		voxeldungeon.storage.put("loadedDropLimits_"..name, true)
+	for i = 1, 5 do
+		voxeldungeon.generator.limited_drops[name].sou[i] = voxeldungeon.storage.getNum(name.."_sou_"..i) or 0
+		voxeldungeon.generator.limited_drops[name].pos[i] = voxeldungeon.storage.getNum(name.."_pos_"..i) or 0
+		voxeldungeon.generator.limited_drops[name].pom[i] = voxeldungeon.storage.getNum(name.."_pom_"..i) or 0
 	end
+
+	voxeldungeon.generator.saveDropLimits(player)
 end)

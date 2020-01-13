@@ -190,7 +190,7 @@ voxeldungeon.register_plant("fadeleaf", "Fadeleaf\n \nTouching a Fadeleaf will t
 end)
 
 voxeldungeon.register_plant("firebloom", "Firebloom\n \nWhen something touches a Firebloom, it bursts into flames.", function(pos)
-	minetest.set_node(pos, {name = "fire:basic_flame"})
+	voxeldungeon.blobs.seed("fire", pos, 2)
 end)
 
 voxeldungeon.register_plant("icecap", "Icecap\n \nUpon being touched, an Icecap excretes a pollen that freezes everything in its vicinity.", function(p)

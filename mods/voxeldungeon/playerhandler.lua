@@ -193,6 +193,130 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 	end
 end)
 
+minetest.register_on_player_hpchange(function(player, hp_change, reason)
+	if player:get_hp() + hp_change <= 0 then
+		local inv = player:get_inventory()
+		local ankh
+
+		for i = 1, inv:get_size("main") do
+			local item = inv:get_stack("main", i)
+
+			if item:get_name() == "voxeldungeon:ankh_blessed" then
+				ankh = {i = i, item = item}
+				break
+			elseif item:get_name() == "voxeldungeon:ankh" then
+				ankh = {i = i, item = item}
+			end
+		end
+
+		if ankh then
+			if ankh.item:get_name() == "voxeldungeon:ankh" then
+				for i = 1, inv:get_size("main") do
+					if i ~= player:get_wield_index() and 
+							minetest.get_item_group(inv:get_stack("main", i):get_name(), "unique") == 0 then 
+						inv:set_stack("main", i, "")
+					end
+				end
+			end
+
+			inv:set_stack("main", ankh.i, "")
+			voxeldungeon.glog.i("Your "..voxeldungeon.utils.itemShortDescription(ankh.item).." explodes with life-giving energy!", player)
+			player:set_hp(voxeldungeon.playerhandler.playerdata[player:get_player_name()].HT)
+
+			return 0, true
+		else
+			return hp_change
+		end
+	else
+		return hp_change
+	end
+end, true)
+
+minetest.register_on_dieplayer(function(player)
+	if creative.is_enabled_for(player:get_player_name()) then return end
+
+	local playername = player:get_player_name()
+	local pos = vector.round(player:get_pos())
+	local inv = player:get_inventory()
+	local max = inv:get_size("main")
+
+	local empty_slots = {}
+	local must_have = {}
+	local can_have = {}
+
+	for i = 1, max do
+		empty_slots[i] = i
+
+		local item = inv:get_stack("main", i)
+
+		if not item:is_empty() then
+			if i == player:get_wield_index() or minetest.get_item_group(item:get_name(), "unique") > 0 then
+				table.insert(must_have, item)
+			else
+				table.insert(can_have, item)
+			end
+		end
+	end
+
+	for i = 1, inv:get_size("craft") do
+		local item = inv:get_stack("craft", i)
+
+		if not item:is_empty() then
+			table.insert(can_have, item)
+		end
+	end
+
+	local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
+	local armor_item = armor_inv:get_stack("armor", 1)
+
+	if not armor_item:is_empty() then
+		table.insert(must_have, armor_item)
+	end
+
+	inv:set_list("main", {})
+	inv:set_list("craft", {})
+	armor_inv:set_list("armor", {})
+	armor:save_armor_inventory(player)
+	armor:set_player_armor(player)
+
+
+
+	if #must_have == 0 and #can_have <= 1 then
+		table.insert(must_have, ItemStack("voxeldungeon:gold"))
+	end
+
+	minetest.set_node(pos, {name = "bones:bones", param2 = minetest.dir_to_facedir(player:get_look_dir())})
+
+	local bone_meta = minetest.get_meta(pos)
+	local bone_inv = bone_meta:get_inventory()
+	bone_inv:set_size("main", 8 * 4)
+
+	for _, item in ipairs(must_have) do
+		local i = table.remove(empty_slots, math.random(#empty_slots))
+		bone_inv:set_stack("main", i, item)
+	end
+
+	local can_have_amount = math.min(voxeldungeon.utils.round(#can_have / 4), #empty_slots)
+
+	for i = 1, can_have_amount do
+		local item = voxeldungeon.utils.randomObject(can_have, true)
+		local i = voxeldungeon.utils.randomObject(empty_slots, true)
+
+		bone_inv:set_stack("main", i, item)
+	end
+
+	bone_meta:set_string("owner", playername)
+	bone_meta:set_string("infotext", playername.."'s bones")
+
+	bone_meta:set_string("formspec", "size[8,9]" ..
+		"list[current_name;main;0,0.3;8,4;]" ..
+		"list[current_player;main;0,4.85;8,1;]" ..
+		"list[current_player;main;0,6.08;8,3;8]" ..
+		"listring[current_name;main]" ..
+		"listring[current_player;main]" ..
+		default.get_hotbar_bg(0,4.85))
+end)
+
 
 
 --Player punch time handling

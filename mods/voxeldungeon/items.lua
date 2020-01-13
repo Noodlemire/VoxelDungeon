@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
+voxeldungeon.items = {}
+
 
 
 local function get_pointed_pos(pointed_thing)
@@ -78,9 +80,33 @@ end
 
 
 
+minetest.register_craftitem("voxeldungeon:ankh", {
+	description = voxeldungeon.utils.itemDescription("Ankh\n \nThis ancient symbol of immortality grants the ability to return to life after death. Upon resurrection, most items that aren't equipped or wielded are lost. By crafting it with a full dew vial, the ankh can be blessed with extra strength."),
+	inventory_image = "voxeldungeon_item_ankh.png",
+	stack_max = 1
+})
+
+minetest.register_craftitem("voxeldungeon:ankh_blessed", {
+	description = voxeldungeon.utils.itemDescription("Blessed Ankh\n \nThis ancient symbol of immortality grants the ability to return to life after death. The ankh has been blessed and is now much stronger. The Ankh will sacrifice itself to save you and your entire inventory in a moment of deadly peril."),
+	inventory_image = "voxeldungeon_item_ankh_blessed.png",
+	stack_max = 1
+})
+
+minetest.override_item("fire:basic_flame", {
+	on_construct = function(pos)
+		minetest.remove_node(pos)
+		voxeldungeon.blobs.seed("fire", pos, 2)
+	end
+})
+
 voxeldungeon.register_throwingitem("bomb", "Bomb\n \nThis is a relatively small bomb, filled with black powder. Conveniently, its fuse is lit automatically when the bomb is thrown.\n \nRight-click while holding a bomb to throw it.", function(pos)
 	tnt.boom(pos, {radius = 2, damage_radius = 2})
-end)
+end, {
+	groups = {flammable = 1},
+	on_burn = function(pos)
+		tnt.boom(pos, {radius = 2, damage_radius = 2})
+	end
+})
 
 minetest.register_craftitem("voxeldungeon:demonite_lump", {
 	description = "Demonite Lump",
@@ -90,25 +116,6 @@ minetest.register_craftitem("voxeldungeon:demonite_lump", {
 minetest.register_craftitem("voxeldungeon:demonite_ingot", {
 	description = "Demonite Ingot",
 	inventory_image = "voxeldungeon_item_demonite_ingot.png"
-})
-
-minetest.register_craftitem("voxeldungeon:dew", {
-	description = voxeldungeon.utils.itemDescription("Dew Drop\n \nA crystal clear dewdrop; due to the magic of the underground, it has minor restorative properties."),
-	inventory_image = "voxeldungeon_item_dew.png"
-})
-local super_on_punch = minetest.registered_entities["__builtin:item"].on_punch
-entitycontrol.override_entity("__builtin:item", {
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
-		local items = ItemStack(self.itemstring)
-	
-		if items:get_name() == "voxeldungeon:dew" then
-			puncher:set_hp(puncher:get_hp() + items:get_count())
-			self.itemstring = ""
-			self.object:remove()
-		else
-			return super_on_punch(self, puncher, time_from_last_punch, tool_capabilities, dir)
-		end
-	end
 })
 
 minetest.register_craftitem("voxeldungeon:gold", {
@@ -129,6 +136,121 @@ minetest.override_item("default:torch", {
 
 
 
+local DEW_VIAL_MAX = 20
+
+function voxeldungeon.items.update_vial_description(vial)
+	local meta = vial:get_meta()
+	local dew = meta:get_int("voxeldungeon:dew")
+
+	local def = vial:get_definition()
+	local desc = def.description
+	local info = def._info
+
+	meta:set_string("description", voxeldungeon.utils.itemDescription(desc.." ("..dew..'/'..DEW_VIAL_MAX..")\n \n"
+		..info))
+end
+
+local function do_drink(itemstack, user, pointed_thing)
+	if user then
+		local meta = itemstack:get_meta()
+		local dew = meta:get_int("voxeldungeon:dew")
+		local HT = voxeldungeon.playerhandler.playerdata[user:get_player_name()].HT
+
+		local percent = math.min(dew / DEW_VIAL_MAX, voxeldungeon.utils.round((HT - user:get_hp()) / HT, 20))
+
+		if percent > 0 then
+			user:set_hp(user:get_hp() + HT * percent)
+			meta:set_int("voxeldungeon:dew", dew - DEW_VIAL_MAX * percent)
+			voxeldungeon.items.update_vial_description(vial)
+		elseif user:get_hp() == HT then
+			voxeldungeon.glog.i("Your HP is already full!", user)
+		else
+			voxeldungeon.glog.i("Your dew vial is empty!", user)
+		end
+	end
+
+	return itemstack
+end
+
+minetest.register_craftitem("voxeldungeon:dew", {
+	description = voxeldungeon.utils.itemDescription("Dew Drop\n \nA crystal clear dewdrop; due to the magic of the underground, it has minor restorative properties."),
+	inventory_image = "voxeldungeon_item_dew.png",
+	groups = {flammable = 1}
+})
+
+minetest.register_craftitem("voxeldungeon:dewvial", {
+	description = "Dew Vial",
+	inventory_image = "voxeldungeon_item_dewvial.png",
+	_info = "You can store excess dew in this tiny vessel and drink it later. The more full the vial is, the more you will be instantly healed when drinking it. You will only drink as much as you need.\n \nVials like this one used to be imbued with revival magic, but that power has faded. There still seems to be some residual power left, perhaps a full vial can bless another revival item.\n \nRight click while holding it to drink from it.",
+
+	stack_max = 1,
+	groups = {unique = 1},
+
+	on_place = do_drink,
+	on_secondary_use = do_drink,
+})
+
+local super_on_punch = minetest.registered_entities["__builtin:item"].on_punch
+local super_on_step = minetest.registered_entities["__builtin:item"].on_step
+entitycontrol.override_entity("__builtin:item", {
+	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
+		local items = ItemStack(self.itemstring)
+	
+		if items:get_name() == "voxeldungeon:dew" then
+			local inv = puncher:get_inventory()
+
+			for i = 1, inv:get_size("main") do
+				local vial = inv:get_stack("main", i)
+				local meta = vial:get_meta()
+				local amount = meta:get_int("voxeldungeon:dew")
+
+				if vial:get_name() == "voxeldungeon:dewvial" and amount < DEW_VIAL_MAX then
+					meta:set_int("voxeldungeon:dew", math.min(amount + items:get_count(), DEW_VIAL_MAX))
+					voxeldungeon.items.update_vial_description(vial)
+					inv:set_stack("main", i, vial)
+
+					if amount + items:get_count() < DEW_VIAL_MAX then
+						voxeldungeon.glog.i("You put the dew drop in your dew vial.", puncher)
+					else
+						voxeldungeon.glog.p("Your dew vial is full!", puncher)
+					end
+
+					self.itemstring = ""
+					self.object:remove()
+					return
+				end
+			end
+
+			puncher:set_hp(puncher:get_hp() + items:get_count())
+			self.itemstring = ""
+			self.object:remove()
+		else
+			return super_on_punch(self, puncher, time_from_last_punch, tool_capabilities, dir)
+		end
+	end,
+
+	on_step = function(self, dtime)
+		super_on_step(self, dtime)
+
+		if voxeldungeon.blobs.get("voxeldungeon:blob_fire", self.object:get_pos()) > 0 then
+			local item = ItemStack(self.itemstring)
+
+			if item:get_definition().groups.flammable then
+				local on_burn = item:get_definition().on_burn
+
+				if on_burn then
+					on_burn(self.object:get_pos())
+				end
+
+				self.itemstring = ""
+				self.object:remove()
+			end
+		end
+	end
+})
+
+
+
 local function do_augment(itemstack, user, augment_type)
 	local itemname = itemstack:get_name()
 	voxeldungeon.utils.take_item(user, itemstack)
@@ -140,7 +262,7 @@ local function do_augment(itemstack, user, augment_type)
 			voxeldungeon.weapons.updateDescription(choice)
 		else
 			if choice then
-				voxeldungeon.glog.i("That weapon is already augmented for "..augment_type..".")
+				voxeldungeon.glog.i("That weapon is already augmented for "..augment_type..".", player)
 			end
 
 			voxeldungeon.utils.return_item(user, itemname)
