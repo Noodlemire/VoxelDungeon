@@ -27,7 +27,7 @@ end
 mobkit.terminal_velocity = sqrt(2*-mobkit.gravity*20) -- 20 meter fall = dead
 mobkit.safe_velocity = sqrt(2*-mobkit.gravity*5) -- 5 m safe fall
 
-local abr = minetest.get_mapgen_setting('active_block_range')
+local abr = tonumber(minetest.get_mapgen_setting('active_block_range')) or 3
 
 local neighbors ={
 	{x=1,z=0},
@@ -161,10 +161,13 @@ function mobkit.get_nodes_in_area(pos1,pos2,full)
 				y=y+sy
 				
 				local pos = {x=x,y=y,z=z}
-				if full==true then
-					result[pos] = minetest.registered_nodes[minetest.get_node(pos).name]
-				else
-					result[minetest.registered_nodes[minetest.get_node(pos).name]] = true
+				local node = mobkit.nodeatpos(pos)
+				if node	then
+					if full==true then
+						result[pos] = node
+					else
+						result[node] = true
+					end
 				end
 			
 				cnt=cnt+1
@@ -441,6 +444,7 @@ function mobkit.make_sound(self, sound)
 		param_table.gain = in_range(spec.gain)
 		param_table.fade = in_range(spec.fade)
 		param_table.pitch = in_range(spec.pitch)
+		return minetest.sound_play(spec.name, param_table)
 	end
 	return minetest.sound_play(spec, param_table)
 end
@@ -892,6 +896,11 @@ function mobkit.actfunc(self, staticdata, dtime_s)
 		end
 	end
 	
+	if self.textures==nil then
+		local prop_tex = self.object:get_properties().textures
+		if prop_tex then self.textures=prop_tex end
+	end
+	
 	if not self.memory then 		-- this is the initial activation
 		self.memory = {} 
 		
@@ -904,7 +913,7 @@ function mobkit.actfunc(self, staticdata, dtime_s)
 	end
 	
 	-- apply texture
-	if self.texture_no then
+	if self.textures and self.texture_no then
 		local props = {}
 		props.textures = {self.textures[self.texture_no]}
 		self.object:set_properties(props)
@@ -1288,8 +1297,13 @@ end
 function mobkit.hq_warn(self,prty,tgtobj)
 	local timer=0
 	local tgttime = 0
+	local init = true
 	local func = function(self)
 		if not mobkit.is_alive(tgtobj) then return true end
+		if init then
+			mobkit.animate(self,'stand')
+			init = false
+		end
 		local pos = mobkit.get_stand_pos(self)
 		local opos = tgtobj:get_pos()
 		local dist = vector.distance(pos,opos)
@@ -1478,7 +1492,7 @@ function mobkit.is_in_deep(target)
 	local node2 = mobkit.nodeatpos(nodepos)
 	nodepos.y=nodepos.y-2
 	local node3 = mobkit.nodeatpos(nodepos)
-	if node1 and node2 and node1.drawtype=='liquid' and (node2.drawtype=='liquid' or node3.drawtype=='liquid') then
+	if node1 and node2 and node3 and node1.drawtype=='liquid' and (node2.drawtype=='liquid' or node3.drawtype=='liquid') then
 		return true
 	end
 end

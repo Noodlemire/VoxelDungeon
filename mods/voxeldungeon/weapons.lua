@@ -21,10 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 voxeldungeon.weapons = {} --global variable
 
+local HITS_TO_KNOW = 20
 
 
-local function getDamageOf(weapon)
+
+local function getDamageOf(weapon, unIdentified)
 	local level = weapon:get_meta():get_int("voxeldungeon:level")
+
+	if unIdentified then
+		level = 0
+	end
 
 	local def = weapon:get_definition()
 	local tier = def._tier
@@ -39,10 +45,24 @@ local function durabilityPerHitWith(weapon)
 	return 1 - level / (level + 2)
 end
 
+function voxeldungeon.weapons.isLevelKnown(weapon)
+	return weapon:get_meta():get_int("voxeldungeon:levelKnown") >= HITS_TO_KNOW
+end
+
+function voxeldungeon.weapons.isIdentified(weapon)
+	return voxeldungeon.weapons.isLevelKnown(weapon)
+end
+
+function voxeldungeon.weapons.identify(weapon)
+	weapon:get_meta():set_int("voxeldungeon:levelKnown", HITS_TO_KNOW)
+	voxeldungeon.weapons.updateDescription(weapon)
+end
+
 function voxeldungeon.weapons.updateDescription(weapon)
 	local meta = weapon:get_meta()
 	local level = meta:get_int("voxeldungeon:level")
 	local augment = meta:get_string("voxeldungeon:augment")
+	local levelKnown = voxeldungeon.weapons.isLevelKnown(weapon)
 
 	local def = weapon:get_definition()
 	local tier = def._tier
@@ -50,8 +70,15 @@ function voxeldungeon.weapons.updateDescription(weapon)
 	local dly = def.tool_capabilities.full_punch_interval
 	local dur = def._durabilityMultiplier or 1
 
-	local damage = getDamageOf(weapon)
-	local strreq = voxeldungeon.tools.getStrengthRequirementOf(weapon)
+	local damage = getDamageOf(weapon, not levelKnown)
+	local strreq = voxeldungeon.tools.getStrengthRequirementOf(weapon, not levelKnown)
+
+	local statsDesc = "tier-"..tier.." weapon deals "..damage.." damage and requires "..strreq.." points of strength to wield properly."
+	if levelKnown then
+		statsDesc = "This "..statsDesc
+	else
+		statsDesc = "Typically, this "..statsDesc
+	end
 
 	local dlyString = ""
 	if dly > 1 then dlyString = "\n \nThis is a rather slow weapon."
@@ -71,35 +98,45 @@ function voxeldungeon.weapons.updateDescription(weapon)
 	local strTip = "\n \nHaving excess strength with this weapon will let you deal bonus damage with it, "..
 			"while lacking strength will greatly reduce your attack speed."
 	
-	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(weapon).."\n \n"..info.. 
-								"\n \nThis tier-"..tier.." weapon deals "..damage.." damage and requires "..strreq..
-								" points of strength to wield properly."..dlyString..durString..augString..strTip))
+	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(weapon).."\n \n"..info..
+									"\n \n"..statsDesc..dlyString..durString..augString..strTip))
 end
 
-function voxeldungeon.weapons.on_use(itemstack, user, pointed_thing)
-	if pointed_thing.type == "object" then
-		local target = pointed_thing.ref
-		local toolcap = itemstack:get_tool_capabilities()
-		local strdiff = voxeldungeon.playerhandler.getSTR(user) - voxeldungeon.tools.getStrengthRequirementOf(itemstack)
-		local augment = itemstack:get_meta():get_string("voxeldungeon:augment")
-		local def = itemstack:get_definition()
-		local wear = math.floor(65535 / (1000 / def._durabilityPerUse * def._durabilityMultiplier))
+function voxeldungeon.weapons.on_use(itemstack, user, target, time_from_last_punch)
+	local toolcap = itemstack:get_tool_capabilities()
+	local strdiff = voxeldungeon.playerhandler.getSTR(user) - voxeldungeon.tools.getStrengthRequirementOf(itemstack)
 
-		toolcap.damage_groups = {fleshy = getDamageOf(itemstack) + math.floor(math.max(0, strdiff) / 2)}
-		toolcap.full_punch_interval = toolcap.full_punch_interval * math.max(1, -strdiff + 1)
+	local meta = itemstack:get_meta()
+	local augment = itemstack:get_meta():get_string("voxeldungeon:augment")
+	local levelKnown = meta:get_int("voxeldungeon:levelKnown")
 
-		if augment == "speed" then
-			toolcap.full_punch_interval = toolcap.full_punch_interval * 0.667
-			wear = voxeldungeon.utils.round(wear * 1.333)
-		elseif augment == "durability" then
-			toolcap.full_punch_interval = toolcap.full_punch_interval * 1.333
-			wear = voxeldungeon.utils.round(wear * 0.667)
-		end
+	local def = itemstack:get_definition()
+	local wear = math.floor(65535 / (1000 / def._durabilityPerUse * def._durabilityMultiplier))
 
-		itemstack:add_wear(wear)
+	toolcap.damage_groups = {fleshy = getDamageOf(itemstack) + math.floor(math.max(0, strdiff) / 2)}
+	toolcap.full_punch_interval = toolcap.full_punch_interval * math.max(1, -strdiff + 1)
 
-		return itemstack, toolcap
+	if augment == "speed" then
+		toolcap.full_punch_interval = toolcap.full_punch_interval * 0.667
+		wear = voxeldungeon.utils.round(wear * 1.333)
+	elseif augment == "durability" then
+		toolcap.full_punch_interval = toolcap.full_punch_interval * 1.333
+		wear = voxeldungeon.utils.round(wear * 0.667)
 	end
+
+	if levelKnown < HITS_TO_KNOW and toolcap.full_punch_interval <= time_from_last_punch then
+		levelKnown = levelKnown + 1
+		meta:set_int("voxeldungeon:levelKnown", levelKnown)
+
+		if levelKnown == HITS_TO_KNOW then
+			voxeldungeon.weapons.updateDescription(itemstack)
+			voxeldungeon.glog.i("You are now familiar with your "..voxeldungeon.utils.itemShortDescription(itemstack)..".", user)
+		end
+	end
+
+	itemstack:add_wear(wear)
+
+	return itemstack, toolcap
 end
 
 local function register_weapon(name, def) --desc, tier, info, damage, delay, durability, tooltype)

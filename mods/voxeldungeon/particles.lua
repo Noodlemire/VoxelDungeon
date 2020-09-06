@@ -276,7 +276,7 @@ function voxeldungeon.particles.blastwave_trail(pos)
 end
 
 function voxeldungeon.particles.blood(pos, customdata)
-	color = customdata.color or {r = 204, g = 0, b = 0}
+	local color = customdata.color or {r = 204, g = 0, b = 0}
 
 	local particle = minetest.add_entity(pos, "voxeldungeon:particle_dot")
 

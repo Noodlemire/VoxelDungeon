@@ -134,6 +134,14 @@ minetest.register_craft({
 
 
 
+--Any crafted item is instantly identified
+minetest.register_on_craft(function(itemstack, player, old_craft_grid, craft_inv)
+	voxeldungeon.items.identify(itemstack)
+	return itemstack
+end)
+
+
+
 --Bed recipes that allow any wool
 
 minetest.register_craft({

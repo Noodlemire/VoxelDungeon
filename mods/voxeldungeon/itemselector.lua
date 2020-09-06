@@ -33,21 +33,7 @@ local function tileToString(tile)
 	end
 end
 
-local function get_item_groups(itemname, groups)
-	local val = 0
-
-	if type(groups) == "table" then
-		for _, group in ipairs(groups) do
-			val = val + minetest.get_item_group(itemname, group)
-		end
-	else
-		val = minetest.get_item_group(itemname, groups)
-	end
-
-	return val
-end
-
-function voxeldungeon.itemselector.showSelector(player, label, selectable, select_goal, callback)
+function voxeldungeon.itemselector.showSelector(player, label, selectCondition, callback)
 	local fs = "size[8,5]label[0,0;"..label.."]"
 	local inv = player:get_inventory()
 	local playername = player:get_player_name()
@@ -59,7 +45,7 @@ function voxeldungeon.itemselector.showSelector(player, label, selectable, selec
 
 		if item:is_empty() then
 			fs = fs.."image["..x..","..y..";1,1;voxeldungeon_ui_itemslot.png]"
-		elseif get_item_groups(item:get_name(), selectable) >= select_goal then
+		elseif selectCondition(item) then
 			fs = fs.."item_image_button["..x..","..y..";1,1;"..item:get_name()..";slot_button_"..i..";]"..
 				"tooltip[slot_button_"..i..";"..voxeldungeon.utils.itemShortDescription(item).."]"
 		else
@@ -82,7 +68,7 @@ function voxeldungeon.itemselector.showSelector(player, label, selectable, selec
 
 	if armor:is_empty() then
 		fs = fs.."image[7,0;1,1;voxeldungeon_ui_itemslot.png]"
-	elseif get_item_groups(armor:get_name(), selectable) >= select_goal then
+	elseif selectCondition(armor) then
 		fs = fs.."item_image_button[7,0;1,1;"..armor:get_name()..";slot_button_a;]"..
 				"tooltip[slot_button_a;"..voxeldungeon.utils.itemShortDescription(armor).."]"
 	else

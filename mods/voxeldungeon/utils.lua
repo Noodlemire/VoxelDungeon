@@ -345,18 +345,40 @@ end
 
 function voxeldungeon.utils.itemShortDescription(item)
 	local level = item:get_meta():get_int("voxeldungeon:level")
+	local levelKnown = true
+
+	if minetest.get_item_group(item:get_name(), "weapon") > 0 then
+		levelKnown = voxeldungeon.weapons.isLevelKnown(item)
+	elseif minetest.get_item_group(item:get_name(), "wand") > 0 then
+		levelKnown = voxeldungeon.wands.isLevelKnown(item)
+	elseif minetest.get_item_group(item:get_name(), "armor") > 0 then
+		levelKnown = voxeldungeon.armor.isLevelKnown(item)
+	end
 
 	if minetest.get_item_group(item:get_name(), "upgradable") > 0 then
 		local desc = minetest.registered_items[item:get_name()].description
 
 		local lvlstr = ""
-		if level > 0 then
+		if level > 0 and levelKnown then
 			lvlstr = " +"..level
 		end
 
 		return desc..lvlstr
 	else
 		return voxeldungeon.utils.splitstring(item:get_description(), '\n')[1]
+	end
+end
+
+function voxeldungeon.utils.iteratePlayerInventories(player, func)
+	local lists = {"main", "craft"}
+	local inv = player:get_inventory()
+
+	for _, list in ipairs(lists) do
+		for i = 1, inv:get_size(list) do
+			local itemstack = inv:get_stack(list, i)
+			itemstack = func(player, inv, itemstack, i)
+			inv:set_stack(list, i, itemstack)
+		end
 	end
 end
 

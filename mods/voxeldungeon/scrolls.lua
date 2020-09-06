@@ -26,27 +26,50 @@ local scroll_defs =
 		desc = "Upgrade\n \nThis scroll will upgrade a single item, improving its quality. A wand will increase in power and in number of charges; a weapon will inflict more damage or find its mark more frequently; a suit of armor will deflect additional blows; the effect of a ring on its wearer will intensify. Weapons and armor will also require less strength to use, and any curses on the item will be lifted.",
 
 		read = function(itemstack, user, pointed_thing)
-			local itemname = itemstack:get_name()
 			voxeldungeon.utils.take_item(user, itemstack)
 
-			voxeldungeon.itemselector.showSelector(user, "Select an item to upgrade.", "upgradable", 1, function(player, item)
-				if item then
-					voxeldungeon.tools.upgrade(item)
-					voxeldungeon.glog.p("Your "..voxeldungeon.utils.itemShortDescription(item).." looks much better now.", player)
-					return item
-				else
-					voxeldungeon.utils.return_item(user, itemname)
+			voxeldungeon.itemselector.showSelector(user, "Select an item to upgrade.", 
+				function(item)
+					return minetest.get_item_group(item:get_name(), "upgradable") > 0
+				end, 
+				function(player, item)
+					if item then
+						voxeldungeon.tools.upgrade(item)
+						voxeldungeon.glog.p("Your "..voxeldungeon.utils.itemShortDescription(item).." looks much better now.", player)
+						return item
+					else
+						voxeldungeon.utils.return_item(user, itemstack:get_name())
+					end
 				end
-			end)
+			)
 
 			return itemstack
 		end
 	},
 	{
 		name = "identify",
-		desc = "Identify",
+		desc = "Identify\n \nThis scroll permanently reveals all of the secrets of a single item.",
 
 		read = function(itemstack, user, pointed_thing)
+			voxeldungeon.utils.take_item(user, itemstack)
+
+			voxeldungeon.itemselector.showSelector(user, "Select an item to identify.", 
+				function(item)
+					return (minetest.get_item_group(item:get_name(), "armor") > 0 and not voxeldungeon.armor.isIdentified(item)) or
+						(minetest.get_item_group(item:get_name(), "wand") > 0 and not voxeldungeon.wands.isIdentified(item)) or
+						(minetest.get_item_group(item:get_name(), "weapon") > 0 and not voxeldungeon.weapons.isIdentified(item))
+				end, 
+				function(player, item)
+					if item then
+						voxeldungeon.items.identify(item)
+						voxeldungeon.glog.i("The scroll identifies your "..voxeldungeon.utils.itemShortDescription(item)..".", player)
+						return item
+					else
+						voxeldungeon.utils.return_item(user, itemstack:get_name())
+					end
+				end
+			)
+
 			return voxeldungeon.utils.take_item(user, itemstack)
 		end
 	},

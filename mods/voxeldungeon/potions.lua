@@ -19,6 +19,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
+voxeldungeon.potions = {}
+
+
+
+function voxeldungeon.potions.identify(player, potion)
+	voxeldungeon.typeIdentification.setKnown(player, "potion", potion:get_definition()._ti_key)
+end
+
+function voxeldungeon.potions.isIdentified(player, potion)
+	voxeldungeon.typeIdentification.isKnown(player, "potion", potion:get_definition()._ti_key)
+end
+
+
+
 local potion_defs = 
 {
 	{
@@ -227,6 +241,7 @@ local function register_potion(name, desc, color, drink, shatter)
 		inventory_image = "voxeldungeon_item_potion_"..color..".png",
 		_cornerLR = "voxeldungeon_icon_potion_"..name..".png",
 		groups = {freezable = 1, vessel = 1},
+		_ti_key = color,
 
 		on_use = function(itemstack, user)
 			if drink then

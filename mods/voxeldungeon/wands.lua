@@ -21,7 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 voxeldungeon.wands = {}
 
-local wear = math.floor(65535 / (200))
+local ZAPS_TO_KNOW = 10
+local wear = math.floor(65535 / 200)
 local timer = 0
 
 local wand_defs = 
@@ -41,9 +42,15 @@ local wand_defs =
 		def = {	
 			desc = "Blast Wave",
 
-			info = function(wand)
-				local dmg = wand:get_meta():get_int("voxeldungeon:level") + 2
-				return "This wand shoots a bolt which violently detonates at a target location. Although the force of this blast only deals "..dmg.." damage, it can send most enemies flying."
+			info = function(wand, unidentified)
+				local dmgtext = "only deals "..(wand:get_meta():get_int("voxeldungeon:level") + 2).." damage"
+
+				if unidentified then 
+					dmgtext = "typically only deals 2 damage"
+				end
+
+				return "This wand shoots a bolt which violently detonates at a target location. Although the force of this blast "
+					..dmgtext..", it can send most enemies flying."
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -93,10 +100,14 @@ local wand_defs =
 		def = {
 			desc = "Disintegration",
 
-			info = function(wand)
-				local dmg = 5 + wand:get_meta():get_int("voxeldungeon:level") * 2
+			info = function(wand, unidentified)
+				local dmgtext = "deals "..(5 + wand:get_meta():get_int("voxeldungeon:level") * 2).." damage"
 
-				return "This wand shoots a beam that pierces any obstacle, and will go farther the more it is upgraded. The beam deals "..dmg.." damage, and will also deal bonus damage for each enemy and wall it penetrates."
+				if unidentified then 
+					dmgtext = "typically deals 5 damage"
+				end
+
+				return "This wand shoots a beam that pierces any obstacle, and will go farther the more it is upgraded. The beam "..dmgtext..", and will also deal bonus damage for each enemy and wall it penetrates."
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -150,11 +161,14 @@ local wand_defs =
 			desc = "Flock",
 			_baseCharges = 1,
 
-			info = function(wand)
-				local amount = 2 + wand:get_meta():get_int("voxeldungeon:level")
-				local dmg = amount * 5
+			info = function(wand, unidentified)
+				local amounttext = "up to "..(2 + wand:get_meta():get_int("voxeldungeon:level")).." magic sheep"
 
-				return "A flick of this wand uses its remaining charge to summon a flock of up to "..amount.." magic sheep, creating a temporary impenetrable obstacle. After a period of time, these sheep will all simultanously explode. Its power is derived from the amount of charges it can use in a single zap."
+				if unidentified then 
+					amounttext = "typically up to 2 magic sheep"
+				end
+
+				return "A flick of this wand uses its remaining charge to summon a flock of "..amounttext..", creating a temporary impenetrable obstacle. After a period of time, these sheep will all simultanously explode. Its power is derived from the amount of charges it can use in a single zap."
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -201,10 +215,16 @@ local wand_defs =
 			desc = "Magic Missile",
 			_baseCharges = 3,
 
-			info = function(wand)
+			info = function(wand, unidentified)
 				local dmg = 6 + wand:get_meta():get_int("voxeldungeon:level")
 
-				return "This fairly plain wand launches missiles of pure magical energy. While not as strong as other wands, it makes up for it somewhat with more available charges.\n \nEach bolt from this wand deals "..dmg.." damage, and has no additional effects."
+				local dmgtext = "deals "..(6 + wand:get_meta():get_int("voxeldungeon:level")).." damage"
+
+				if unidentified then 
+					dmgtext = "typically deals 6 damage"
+				end
+
+				return "This fairly plain wand launches missiles of pure magical energy. While not as strong as other wands, it makes up for it somewhat with more available charges.\n \nEach bolt from this wand "..dmgtext..", and has no additional effects."
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -226,10 +246,14 @@ local wand_defs =
 		def = {
 			desc = "Prismatic Light",
 
-			info = function(wand)
-				local dmg = 3 + wand:get_meta():get_int("voxeldungeon:level") * 2
+			info = function(wand, unidentified)
+				local dmgtext = "deals "..(3 + wand:get_meta():get_int("voxeldungeon:level") * 2).." damage"
 
-				return "This wand shoots rays of light which cut through the thickest of darkness, revealing hidden areas and traps. The beam can blind enemies, and deals "..dmg.." damage. Demonic and undead foes will burn in the bright light of the wand, taking bonus damage."
+				if unidentified then 
+					dmgtext = "typically deals 3 damage"
+				end
+
+				return "This wand shoots rays of light which cut through the thickest of darkness, revealing hidden areas and traps. The beam can blind enemies, and "..dmgtext..". Demonic and undead foes will burn in the bright light of the wand, taking bonus damage."
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -316,10 +340,15 @@ local wand_defs =
 			desc = "Vampirism",
 			_baseCharges = 1,
 
-			info = function(wand)
+			info = function(wand, unidentified)
 				local dmg = 4 + wand:get_meta():get_int("voxeldungeon:level")
+				local dmgtext = "deals "..dmg.." damage and will give you up to "..math.floor(dmg / 2).." HP."
 
-				return "This wand will allow you to steal life energy from living creatures to restore your own health. However, using it against undead creatures will just harm them.\n \nEach bolt from this wand deals "..dmg.." damage and will give you up to "..math.floor(dmg / 2).." HP."
+				if unidentified then 
+					dmgtext = "typically deals 4 damage and will usually give you up to 2 HP."
+				end
+
+				return "This wand will allow you to steal life energy from living creatures to restore your own health. However, using it against undead creatures will just harm them.\n \nEach bolt from this wand "..dmgtext
 			end,
 
 			zap = function(itemstack, user, pointed_thing)
@@ -363,17 +392,34 @@ function voxeldungeon.wands.fullRecharge(wand)
 	meta:set_int("voxeldungeon:charge", voxeldungeon.wands.getMaxCharge(wand))
 end
 
+function voxeldungeon.wands.isLevelKnown(wand)
+	return wand:get_meta():get_int("voxeldungeon:levelKnown") >= ZAPS_TO_KNOW
+end
+
+function voxeldungeon.wands.isIdentified(wand)
+	return voxeldungeon.wands.isLevelKnown(wand)
+end
+
+function voxeldungeon.wands.identify(wand)
+	wand:get_meta():set_int("voxeldungeon:levelKnown", ZAPS_TO_KNOW)
+	voxeldungeon.wands.updateDescription(wand)
+end
+
 function voxeldungeon.wands.updateDescription(wand)
 	local meta = wand:get_meta()
 	local level = meta:get_int("voxeldungeon:level")
+	local levelKnown = voxeldungeon.wands.isLevelKnown(wand)
 
 	local def = wand:get_definition()
-	local info = def._getInfo(wand)
+	local info = def._getInfo(wand, not levelKnown)
 
-	local charge = voxeldungeon.wands.getCurCharge(wand)
-	local maxCh = voxeldungeon.wands.getMaxCharge(wand)
+	local chargeString = " (?/?)"
+
+	if levelKnown then
+		chargeString = " ("..voxeldungeon.wands.getCurCharge(wand)..'/'..voxeldungeon.wands.getMaxCharge(wand)..")"
+	end
 	
-	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(wand).." ("..charge..'/'..maxCh..")\n \n"
+	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(wand)..chargeString.."\n \n"
 		..info.."\n \nRight click while holding a wand to zap with it."))
 end
 
@@ -416,7 +462,7 @@ end)
 
 
 
-local function register_wand(name, wood, def)--desc, info, wood, zap)
+local function register_wand(name, wood, def)
 	local do_zap = function(itemstack, user, pointed_thing)
 		local charge = voxeldungeon.wands.getCurCharge(itemstack)
 
@@ -425,12 +471,23 @@ local function register_wand(name, wood, def)--desc, info, wood, zap)
 			itemstack:add_wear(wear)
 
 			local meta = itemstack:get_meta()
+			local levelKnown = meta:get_int("voxeldungeon:levelKnown")
 			local old = meta:get_int("voxeldungeon:charge")
 			meta:set_int("voxeldungeon:charge", math.max(old - 1, 0))
 			voxeldungeon.wands.updateDescription(itemstack)
 
 			if old == voxeldungeon.wands.getMaxCharge(itemstack) then
 				meta:set_float("voxeldungeon:lasttime", timer)
+			end
+
+			if levelKnown < ZAPS_TO_KNOW then
+				levelKnown = levelKnown + 1
+				meta:set_int("voxeldungeon:levelKnown", levelKnown)
+
+				if levelKnown == ZAPS_TO_KNOW then
+					voxeldungeon.wands.updateDescription(itemstack)
+					voxeldungeon.glog.i("You are now familiar with your "..voxeldungeon.utils.itemShortDescription(itemstack)..".", user)
+				end
 			end
 		else
 			voxeldungeon.glog.w("The wand fizzles; it must be out of charges for now.", user)

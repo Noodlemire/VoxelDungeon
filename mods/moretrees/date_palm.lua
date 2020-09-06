@@ -11,7 +11,7 @@
 
 -- © 2016, Rogier <rogier777@gmail.com>
 
-local S = moretrees.intllib
+local S = minetest.get_translator("moretrees")
 
 -- Some constants
 
@@ -44,7 +44,11 @@ for k,v in pairs(trunk.tiles) do
 end
 ftrunk.drop = "moretrees:date_palm_trunk"
 ftrunk.after_destruct = function(pos, oldnode)
-	local dates = minetest.find_nodes_in_area({x=pos.x-2, y=pos.y, z=pos.z-2}, {x=pos.x+2, y=pos.y, z=pos.z+2}, {"group:moretrees_dates"})
+	local dates = minetest.find_nodes_in_area(
+		{x=pos.x-2, y=pos.y, z=pos.z-2},
+		{x=pos.x+2, y=pos.y, z=pos.z+2},
+		{"group:moretrees_dates"}
+	)
 	for _,datespos in pairs(dates) do
 		-- minetest.dig_node(datespos) does not cause nearby dates to be dropped :-( ...
 		local items = minetest.get_node_drops(minetest.get_node(datespos).name)
@@ -120,8 +124,11 @@ minetest.register_abm({
 			type = "m"
 			minetest.swap_node(pos, {name="moretrees:date_palm_mfruit_trunk"})
 		end
-		local dates1 = minetest.find_nodes_in_area({x=pos.x-1, y=pos.y, z=pos.z-1}, {x=pos.x+1, y=pos.y, z=pos.z+1}, "air")
-		local genpos
+		local dates1 = minetest.find_nodes_in_area(
+			{x=pos.x-1, y=pos.y, z=pos.z-1},
+			{x=pos.x+1, y=pos.y, z=pos.z+1},
+			"air"
+		)
 		for _,genpos in pairs(dates1) do
 			if math.random(100) <= 20 then
 				if type == "m" then
@@ -131,7 +138,11 @@ minetest.register_abm({
 				end
 			end
 		end
-		local dates2 = minetest.find_nodes_in_area({x=pos.x-2, y=pos.y, z=pos.z-2}, {x=pos.x+2, y=pos.y, z=pos.z+2}, "air")
+		local dates2 = minetest.find_nodes_in_area(
+			{x=pos.x-2, y=pos.y, z=pos.z-2},
+			{x=pos.x+2, y=pos.y, z=pos.z+2},
+			"air"
+		)
 		for _,genpos in pairs(dates2) do
 			if math.random(100) <= 5 then
 				if type == "m" then
@@ -195,7 +206,7 @@ local function find_fruit_trunks_near(ftpos, sect)
 	local r = moretrees.dates_pollination_distance + 2 * math.sqrt(2)
 	local sect_hr = math.floor(r / 3 + 0.9999)
 	local sect_vr = math.floor(r / 2 + 0.9999)
-	local t0us = core.get_us_time()
+	local t0us = minetest.get_us_time()
 	local t0s = os.time()
 
 	-- Compute elapsed time since last search.
@@ -266,7 +277,7 @@ local function find_fruit_trunks_near(ftpos, sect)
 	end
 
 	-- Update search statistics
-	local t1us = core.get_us_time()
+	local t1us = minetest.get_us_time()
 	if t1us < t0us then
 		-- Wraparound. Assume the search lasted less than 2^32 microseconds (~71 min)
 		-- (so no need to apply another correction)
@@ -306,7 +317,7 @@ minetest.register_chatcommand("dates_stats", {
 	params = "|chat|log|reset",
 	privs = { server = true },
 	func = function(name, param)
-		param = string.lower(string.trim(param))
+		param = string.lower(param:gsub("%s+", ""))
 		if param == "" or param == "chat" then
 			return dates_print_search_stats(false)
 		elseif param == "log" then
@@ -526,7 +537,6 @@ end
 local dates_growfn = function(pos, elapsed)
 	local node = minetest.get_node(pos)
 	local delay = moretrees.dates_grow_interval
-	local r = moretrees.dates_pollination_distance
 	local action
 	if not node then
 		return
@@ -594,15 +604,16 @@ local dates_growfn = function(pos, elapsed)
 	return action
 end
 
+--[[
 -- Alternate growth function for dates.
 -- It calls the primary growth function, but also measures CPU time consumed.
 -- Use this function to analyze date growing performance.
 local stat = {}
 stat.count = 0
 local dates_growfn_profiling = function(pos, elapsed)
-	local t0 = core.get_us_time()
+	local t0 = minetest.get_us_time()
 	local action = dates_growfn(pos, elapsed)
-	local t1 = core.get_us_time()
+	local t1 = minetest.get_us_time()
 	if t1 < t0 then
 		t1 = t1 + 2^32
 	end
@@ -656,6 +667,7 @@ local dates_growfn_profiling = function(pos, elapsed)
 			"TOTAL", count, sum/count))
 	end
 end
+--]]
 
 -- Register dates
 

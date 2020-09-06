@@ -19,43 +19,39 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>
 --]]
 
---Unregister default underground biomes, 
-minetest.unregister_biome("icesheet_under")
---minetest.unregister_biome("icesheet_ocean")
-minetest.unregister_biome("tundra_under")
-minetest.unregister_biome("icesheet_ocean")
-minetest.unregister_biome("taiga_under")
-minetest.unregister_biome("taiga_ocean")
-minetest.unregister_biome("snowy_grassland_under")
-minetest.unregister_biome("snowy_grassland_ocean")
-minetest.unregister_biome("grassland_under")
-minetest.unregister_biome("grassland_ocean")
-minetest.unregister_biome("coniferous_forest_under")
-minetest.unregister_biome("coniferous_forest_ocean")
-minetest.unregister_biome("deciduous_forest_under")
-minetest.unregister_biome("deciduous_forest_ocean")
-minetest.unregister_biome("desert_under")
-minetest.unregister_biome("desert_ocean")
-minetest.unregister_biome("sandstone_desert_under")
-minetest.unregister_biome("sandstone_desert_ocean")
-minetest.unregister_biome("cold_desert_under")
-minetest.unregister_biome("cold_desert_ocean")
-minetest.unregister_biome("savanna_under")
-minetest.unregister_biome("savanna_ocean")
-minetest.unregister_biome("rainforest_under")
-minetest.unregister_biome("rainforest_ocean")
 
 
-
---[[
---Surface biome types can stay, but use mostly sewer-style nodes underneath them
-for k, _ in pairs(minetest.registered_biomes) do
-	minetest.registered_biomes[k].node_stone = "voxeldungeon:sewerstone"
-	minetest.registered_biomes[k].node_dungeon = "voxeldungeon:sewerwall"
-	minetest.registered_biomes[k].node_dungeon_alt = nil
-	minetest.registered_biomes[k].node_dungeon_stair = nil
+local function safe_unregister_biome(bname)
+	if minetest.registered_biomes[bname] then
+		minetest.unregister_biome(bname)
+	end
 end
---]]
+
+--Unregister default underground biomes, 
+safe_unregister_biome("icesheet_under")
+--safe_unregister_biome("icesheet_ocean")
+safe_unregister_biome("tundra_under")
+safe_unregister_biome("icesheet_ocean")
+safe_unregister_biome("taiga_under")
+safe_unregister_biome("taiga_ocean")
+safe_unregister_biome("snowy_grassland_under")
+safe_unregister_biome("snowy_grassland_ocean")
+safe_unregister_biome("grassland_under")
+safe_unregister_biome("grassland_ocean")
+safe_unregister_biome("coniferous_forest_under")
+safe_unregister_biome("coniferous_forest_ocean")
+safe_unregister_biome("deciduous_forest_under")
+safe_unregister_biome("deciduous_forest_ocean")
+safe_unregister_biome("desert_under")
+safe_unregister_biome("desert_ocean")
+safe_unregister_biome("sandstone_desert_under")
+safe_unregister_biome("sandstone_desert_ocean")
+safe_unregister_biome("cold_desert_under")
+safe_unregister_biome("cold_desert_ocean")
+safe_unregister_biome("savanna_under")
+safe_unregister_biome("savanna_ocean")
+safe_unregister_biome("rainforest_under")
+safe_unregister_biome("rainforest_ocean")
 
 
 

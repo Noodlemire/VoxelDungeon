@@ -21,10 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 voxeldungeon.armor = {} --global variable
 
+local HITS_TO_KNOW = 15
 
 
-function voxeldungeon.armor.getDefenseOf(armor)
+
+function voxeldungeon.armor.getDefenseOf(armor, unIdentified)
 	local level = armor:get_meta():get_int("voxeldungeon:level")
+
+	if unIdentified then
+		level = 0
+	end
 
 	local def = armor:get_definition()
 	local tier = def._tier
@@ -32,22 +38,57 @@ function voxeldungeon.armor.getDefenseOf(armor)
 	return tier + tier * level
 end
 
+function voxeldungeon.armor.isLevelKnown(armor)
+	return armor:get_meta():get_int("voxeldungeon:levelKnown") >= HITS_TO_KNOW
+end
+
+function voxeldungeon.armor.isIdentified(armor)
+	return voxeldungeon.armor.isLevelKnown(armor)
+end
+
+function voxeldungeon.armor.identify(armor)
+	armor:get_meta():set_int("voxeldungeon:levelKnown", HITS_TO_KNOW)
+	voxeldungeon.armor.updateDescription(armor)
+end
+
+function voxeldungeon.armor.checkLevelKnown(armor, user)
+	local meta = armor:get_meta()
+	local levelKnown = meta:get_int("voxeldungeon:levelKnown")
+
+	if levelKnown < HITS_TO_KNOW then
+		levelKnown = levelKnown + 1
+		meta:set_int("voxeldungeon:levelKnown", levelKnown)
+
+		if levelKnown == HITS_TO_KNOW then
+			voxeldungeon.armor.updateDescription(armor)
+			voxeldungeon.glog.i("You are now familiar with your "..voxeldungeon.utils.itemShortDescription(armor)..".", user)
+		end
+	end
+end
+
 function voxeldungeon.armor.updateDescription(armor)
 	local meta = armor:get_meta()
 	local level = meta:get_int("voxeldungeon:level")
+	local levelKnown = voxeldungeon.armor.isLevelKnown(armor)
 
 	local def = armor:get_definition()
 	local tier = def._tier
 	local info = def._info
 
-	local defense = voxeldungeon.armor.getDefenseOf(armor)
-	local strreq = voxeldungeon.tools.getStrengthRequirementOf(armor)
+	local defense = voxeldungeon.armor.getDefenseOf(armor, not levelKnown)
+	local strreq = voxeldungeon.tools.getStrengthRequirementOf(armor, not levelKnown)
+
+	local statsDesc = "tier-"..tier.." armor blocks "..defense.." damage and requires "..strreq.." points of strength to wear properly."
+	if levelKnown then
+		statsDesc = "This "..statsDesc
+	else
+		statsDesc = "Typically, this "..statsDesc
+	end
 
 	local strTip = "\n \nBe careful about equipping armor without enough strength, your movement speed will decrease."
 	
-	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(armor).."\n \n"..info.. 
-								"\n \nThis tier-"..tier.." armor blocks "..defense.." damage and requires "..strreq..
-								" points of strength to wear properly."..strTip))
+	meta:set_string("description", voxeldungeon.utils.itemDescription(voxeldungeon.utils.itemShortDescription(armor).."\n \n"..info..
+									"\n \n"..statsDesc..strTip))
 end
 
 function voxeldungeon.armor.updateStrdiffArmor(player)

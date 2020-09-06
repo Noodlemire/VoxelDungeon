@@ -66,3 +66,4 @@ dofile(mp.."mapgen.lua")
 
 --Unregistration files
 dofile(mp.."trashbin.lua")
+

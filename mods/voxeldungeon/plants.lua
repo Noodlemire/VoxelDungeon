@@ -62,8 +62,8 @@ function voxeldungeon.register_foilage(name, desc, trampled, ch)
 		check_foilage(pos)
 		
 		if math.random(18) == 1 then
-			local seedname = voxeldungeon.generator.randomSeed()
-			minetest.add_item(pos, {name = seedname})
+			local seed = voxeldungeon.generator.randomSeed()
+			minetest.add_item(pos, seed)
 		end
 		
 		if math.random(6) == 1 then
@@ -97,9 +97,8 @@ function voxeldungeon.register_foilage(name, desc, trampled, ch)
 		}
 
 		local nodename = minetest.get_node(above).name
-		local nodedef = minetest.registered_nodes[nodename]
 			
-		if not nodedef or nodename ~= "voxeldungeon:foilage_"..name.."_top" then
+		if nodename ~= "voxeldungeon:foilage_"..name.."_top" then
 			do_activate(pos)
 		end
 	end
@@ -274,10 +273,9 @@ voxeldungeon.register_foilage("halls_tallgrass", "Hall Tall Grass", "halls_short
 
 
 
-local function set_foilage_checks()
+minetest.register_on_mods_loaded(function()
 	for nodename, _ in pairs(minetest.registered_nodes) do
 		voxeldungeon.override.add_dig_event(nodename, check_foilage)
 		voxeldungeon.override.add_after_place_event(nodename, check_foilage)
 	end
-end
-minetest.after(0, set_foilage_checks)
+end)

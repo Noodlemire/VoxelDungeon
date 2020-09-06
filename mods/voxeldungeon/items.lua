@@ -23,6 +23,18 @@ voxeldungeon.items = {}
 
 
 
+function voxeldungeon.items.identify(item)
+	if minetest.get_item_group(item:get_name(), "armor") > 0 then
+		voxeldungeon.armor.identify(item)
+	elseif minetest.get_item_group(item:get_name(), "wand") > 0 then
+		voxeldungeon.wands.identify(item)
+	elseif minetest.get_item_group(item:get_name(), "weapon") > 0 then
+		voxeldungeon.weapons.identify(item)
+	end
+end
+
+
+
 local function get_pointed_pos(pointed_thing)
 	if pointed_thing.type == "node" then
 		return pointed_thing.above
@@ -229,8 +241,8 @@ entitycontrol.override_entity("__builtin:item", {
 		end
 	end,
 
-	on_step = function(self, dtime)
-		super_on_step(self, dtime)
+	on_step = function(self, dtime, moveresult)
+		super_on_step(self, dtime, moveresult)
 
 		if voxeldungeon.blobs.get("voxeldungeon:blob_fire", self.object:get_pos()) > 0 then
 			local item = ItemStack(self.itemstring)

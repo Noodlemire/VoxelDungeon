@@ -62,14 +62,6 @@ if io.open(worldpath.."/moretrees_settings.txt","r") then
 	dofile(worldpath.."/moretrees_settings.txt")
 end
 
--- Boilerplate to support localized strings if intllib mod is installed.
-local S
-if minetest.get_modpath("intllib") then
-	S = intllib.Getter()
-else
-	S = function(s) return s end
-end
-moretrees.intllib = S
 
 -- infinite stacks checking
 
@@ -334,4 +326,4 @@ function moretrees.grow_fir_snow(pos)
 	minetest.spawn_tree(pos,moretrees.fir_model)
 end
 
-print(S("[Moretrees] Loaded (2013-02-11)"))
+print("[Moretrees] Loaded (2013-02-11)")

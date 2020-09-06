@@ -109,11 +109,12 @@ local function register_mob(name, def)
 	def.attack.full_punch_interval = def.attack.full_punch_interval or 1
 	def.armor = def.armor or 0
 
-	def.on_step = function(self, dtime)
+	def.on_step = function(self, dtime, moveresult)
 		mobkit.stepfunc(self, dtime)
-		if def._on_step then def._on_step(self, dtime) end
+		if def._on_step then def._on_step(self, dtime, moveresult) end
 
 		local pos = self.object:get_pos()
+		if not pos then return end
 		pos.y = pos.y + 0.5
 
 		if #voxeldungeon.utils.getPlayersInArea(pos, 100) > 0 then
@@ -175,7 +176,7 @@ local function register_mob(name, def)
 				time_from_last_punch = voxeldungeon.playerhandler.getTimeFromLastPunch(puncher)
 
 				if minetest.get_item_group(weapon:get_name(), "weapon") > 0 then
-					weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, puncher, {type = "object", ref = self.object})
+					weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, puncher, self.object, time_from_last_punch)
 					minetest.after(0, function() puncher:set_wielded_item(weapon) end)
 				end
 			end

@@ -260,3 +260,25 @@ Alpha 1.5.0:
 
 	Visual:
 		Particles no longer become black when inside nodes.
+
+Alpha 1.6.0:
+	Identification:
+		Various items are now unidentified when first found.
+		Unidentified weapons have their level hidden, and become identified after 20 "proper" uses (No spam clicking)
+		Unidentified armors have their level hidden, and become identified after 15 hits taken while worn
+		Unidentified wands have their level hidden, which becomes known after 10 zaps.
+		Implemented: Scroll of Identify, instantly fully identifies a single selected item.
+
+	Misc:
+		Eating mystery meat can now cause spontaneous combustion.
+		Repair tools now prevent you from trying to select items with no wear, rather than giving you a message about the item being fully repaired.
+		Updated various mods
+		Copied LICENSE.txt into base directory
+
+	Fixed:
+		Armor's durability not being saved properly after taking damage.
+		Grass not properly dropping seeds
+		Compatability issues with MT 5.3
+
+	Performance:
+		Instead of a blob always iterating over every single position it covers, it instead is limited to 100 positions per second. So, extremely large blobs slow themselves more than the server as a whole.

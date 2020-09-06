@@ -47,7 +47,7 @@ register_food("mystery_meat", {
 	groups = {freezable = 1, flammable = 1},
 
 	on_eat = function(itemstack, user) 
-		local effect = math.random(3)
+		local effect = math.random(4)
 
 		if effect == 2 then
 			voxeldungeon.glog.w("You are not feeling well.", user)
@@ -55,6 +55,9 @@ register_food("mystery_meat", {
 		elseif effect == 3 then
 			voxeldungeon.glog.w("You can't feel your legs!", user)
 			voxeldungeon.buffs.attach_buff("voxeldungeon:rooted", user, 10)
+		elseif effect == 4 then
+			voxeldungeon.glog.w("Oh, it's hot!", user)
+			voxeldungeon.buffs.attach_buff("voxeldungeon:burning", user, 8)
 		end
 	end,
 

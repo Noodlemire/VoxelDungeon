@@ -139,7 +139,7 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 			time_from_last_punch = voxeldungeon.playerhandler.getTimeFromLastPunch(hitter)
 
 			if minetest.get_item_group(weapon:get_name(), "weapon") > 0 then
-				weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, hitter, {type = "object", ref = player})
+				weapon, tool_capabilities = voxeldungeon.weapons.on_use(weapon, hitter, player, time_from_last_punch)
 				minetest.after(0, function() hitter:set_wielded_item(weapon) end)
 			end
 		end
@@ -148,15 +148,19 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 			* math.min(1, time_from_last_punch / (tool_capabilities.full_punch_interval or 1))))
 
 		local armor_inv = minetest.get_inventory({type="detached", name=playername.."_armor"})
-		local armor = armor_inv:get_stack("armor", 1)
-		if not armor:is_empty() then
-			local defense = voxeldungeon.armor.getDefenseOf(armor)
+		local armor_item = armor_inv:get_stack("armor", 1)
+		if not armor_item:is_empty() then
+			local defense = voxeldungeon.armor.getDefenseOf(armor_item)
 
 			damage = math.max(0, damage - defense)
 
-			local wear = math.floor(65535 / (1000 / armor:get_definition()._durabilityPerUse))
-			armor:add_wear(wear)
-			armor_inv:set_stack("armor", 1, armor)
+			voxeldungeon.armor.checkLevelKnown(armor_item, player)
+
+			local wear = math.floor(65535 / (1000 / armor_item:get_definition()._durabilityPerUse))
+			armor_item:add_wear(wear)
+			armor_inv:set_stack("armor", 1, armor_item)
+
+			armor:save_armor_inventory(player)
 		end
 
 		voxeldungeon.utils.on_punch_common(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)

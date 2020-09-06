@@ -1,17 +1,30 @@
+std = "lua51+minetest"
 unused_args = false
 allow_defined_top = true
+max_line_length = 999
+max_comment_line_length = 999
 
-read_globals = {
-	"DIR_DELIM",
-	"minetest", "core",
-	"dump",
-	"vector", "nodeupdate",
-	"VoxelManip", "VoxelArea",
-	"PseudoRandom", "ItemStack",
-	"intllib",
-	"default",
-	table = { fields = { "copy", "getn" } },
-	"biome_lib",
-	"stairs", "stairsplus",
+stds.minetest = {
+	read_globals = {
+		"minetest",
+		"vector",
+		"VoxelManip",
+		"VoxelArea",
+		"PseudoRandom",
+		"ItemStack",
+		"default",
+		table = {
+			fields = {
+				"copy",
+			},
+		},
+		"dump",
+	}
 }
 
+read_globals = {
+	"biome_lib",
+	"stairsplus",
+	"stairs",
+	"doors",
+}

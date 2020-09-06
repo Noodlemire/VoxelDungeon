@@ -23,6 +23,7 @@ voxeldungeon.blobs = {}
 voxeldungeon.blobs.registered_blobs = {}
 
 local TIMESCALE = 1
+local MAX_CYCLE_SIZE = 100
 
 local function expandUpon(posses, spreadCondition)
 	local newposses = voxeldungeon.smartVectorTable()
@@ -59,9 +60,8 @@ function voxeldungeon.blobs.register(name, def)
 		blob.posses.table = minetest.deserialize(possesString)
 	end
 
-	blob.volume = voxeldungeon.storage.getNum(name.."_volume") or 0
-
 	blob.timer = voxeldungeon.storage.getNum(name.."_timer") or TIMESCALE
+	blob.queue = voxeldungeon.storage.getNum(name.."_queue") or 1
 		
 	blob.on_step = function(dtime)
 		voxeldungeon.storage.put(name.."_timer", blob.timer)
@@ -73,10 +73,7 @@ function voxeldungeon.blobs.register(name, def)
 		
 		blob.timer = TIMESCALE
 
-		--if blob.volume > 0 then
 		if blob.posses.size() > 0 then
-			blob.volume = 0
-
 			blob:evolve()
 
 			if blob.effectTerr then
@@ -113,13 +110,15 @@ function voxeldungeon.blobs.register(name, def)
 		end
 
 		voxeldungeon.storage.put(name.."_posses", minetest.serialize(blob.posses.table))
-		voxeldungeon.storage.put(name.."_volume", blob.volume)
+		voxeldungeon.storage.put(name.."_queue", blob.queue)
 	end
 
 	blob.evolve = blob.evolve or function(blob)
 		local offload = expandUpon(blob.posses, blob.spreadCondition)
 
-		for i = 1, offload.size() do
+		local cycleSize = math.min(MAX_CYCLE_SIZE, offload.size())
+
+		for i = blob.queue, blob.queue + offload.size() - 1 do
 			local p = offload.getVector(i)
 
 			if p then
@@ -143,14 +142,12 @@ function voxeldungeon.blobs.register(name, def)
 						end
 
 						offload.set(p, value)
-						blob.volume = blob.volume + value
 					else
 						offload.del(p)
 					end
 				else
 					local value = blob.posses.get(p) or 0
 					offload.set(p, value)
-					blob.volume = blob.volume + value
 				end
 			end
 		end
@@ -162,10 +159,15 @@ function voxeldungeon.blobs.register(name, def)
 		end
 
 		blob.posses = offload
+
+		blob.queue = blob.queue + MAX_CYCLE_SIZE
+
+		if blob.queue > offload.size() then
+			blob.queue = 1
+		end
 	end
 
 	blob.seed = function(pos, amount)
-		blob.volume = blob.volume + amount
 		blob.posses.set(pos, amount)
 	end
 
@@ -173,7 +175,6 @@ function voxeldungeon.blobs.register(name, def)
 		local cur = blob.posses.get(pos)
 
 		if cur then
-			blob.volume = blob.volume - cur
 			blob.posses.del(pos)
 		end
 	end
@@ -246,7 +247,9 @@ voxeldungeon.blobs.register("fire", {
 	evolve = function(blob)
 		local offload = expandUpon(blob.posses, blob.spreadCondition)
 
-		for i = 1, offload.size() do
+		local cycleSize = math.min(MAX_CYCLE_SIZE, offload.size())
+
+		for i = blob.queue, blob.queue + offload.size() - 1 do
 			local p = offload.getVector(i)
 
 			if p then
@@ -275,7 +278,6 @@ voxeldungeon.blobs.register("fire", {
 							end
 
 							offload.set(p, value)
-							blob.volume = blob.volume + value
 						end		
 					else
 						offload.del(p)
@@ -283,7 +285,7 @@ voxeldungeon.blobs.register("fire", {
 				else
 					local value = blob.posses.get(p) or 0
 					offload.set(p, value)
-					blob.volume = blob.volume + value
+					cycleSize = cycleSize + 1
 				end
 			end
 		end
@@ -295,6 +297,12 @@ voxeldungeon.blobs.register("fire", {
 		end
 
 		blob.posses = offload
+
+		blob.queue = blob.queue + MAX_CYCLE_SIZE
+
+		if blob.queue > offload.size() then
+			blob.queue = 1
+		end
 	end,
 
 	effectTerr = function(blob, pos, amount, objs)

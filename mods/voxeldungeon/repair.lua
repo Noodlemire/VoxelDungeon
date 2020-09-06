@@ -35,21 +35,26 @@ local function register_repair(name, desc)
 	def.groups = {repair = 1}
 
 	local do_repair = function(itemstack, user, pointed_thing)
-		voxeldungeon.itemselector.showSelector(user, "Choose which "..name.." to repair.", name, 1, function(player, choice)
-			if choice then
-				if choice:get_wear() == 0 then
-					voxeldungeon.glog.i("That "..name.." is already fully repaired.")
-				else
-					local amount = math.ceil(65536 / 3)
-					itemstack:add_wear(amount)
-					user:get_inventory():set_stack("main", user:get_wield_index(), itemstack)
+		voxeldungeon.itemselector.showSelector(user, "Choose which "..name.." to repair.", 
+			function(item)
+				return item:get_wear() > 0 and minetest.get_item_group(item:get_name(), name) > 0
+			end, 
+			function(player, choice)
+				if choice then
+					if choice:get_wear() == 0 then
+						voxeldungeon.glog.i("That "..name.." is already fully repaired.")
+					else
+						local amount = math.ceil(65536 / 3)
+						itemstack:add_wear(amount)
+						user:get_inventory():set_stack("main", user:get_wield_index(), itemstack)
 
-					choice:add_wear(-amount)
+						choice:add_wear(-amount)
+					end
+
+					return choice
 				end
-
-				return choice
 			end
-		end)
+		)
 	end
 
 	def.on_place = do_repair

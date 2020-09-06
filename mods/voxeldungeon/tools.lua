@@ -80,9 +80,13 @@ minetest.register_tool("voxeldungeon:pick_demonite", {
 
 --general upgradable item methods
 
-function voxeldungeon.tools.getStrengthRequirementOf(tierItem)
+function voxeldungeon.tools.getStrengthRequirementOf(tierItem, unIdentified)
 	local level = tierItem:get_meta():get_int("voxeldungeon:level")
 	local tier = tierItem:get_definition()._tier
+
+	if unIdentified then
+		level = 0
+	end
 
 	--strength requirement decreases at +1, +3, +6, +10, etc.
 	return 8 + 2 * tier - math.floor(math.floor(math.sqrt(8 * level + 1) - 1) / 2)
@@ -106,18 +110,3 @@ function voxeldungeon.tools.upgrade(upItem)
 	voxeldungeon.tools.setLevelOf(upItem, level + 1)
 	upItem:set_wear(0)
 end
-
-
-
-minetest.register_on_craft(function(itemstack)
-	if minetest.get_item_group(itemstack:get_name(), "weapon") > 0 then
-		voxeldungeon.weapons.updateDescription(itemstack)
-		return itemstack
-	elseif minetest.get_item_group(itemstack:get_name(), "wand") > 0 then 
-		voxeldungeon.wands.updateDescription(itemstack)
-		return itemstack
-	elseif minetest.get_item_group(itemstack:get_name(), "armor_torso") > 0 then 
-		voxeldungeon.armor.updateDescription(itemstack)
-		return itemstack
-	end
-end)
