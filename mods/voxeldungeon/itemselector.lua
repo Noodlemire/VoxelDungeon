@@ -45,7 +45,8 @@ function voxeldungeon.itemselector.showSelector(player, label, selectCondition, 
 
 		if item:is_empty() then
 			fs = fs.."image["..x..","..y..";1,1;voxeldungeon_ui_itemslot.png]"
-		elseif selectCondition(item) then
+		elseif (type(selectCondition) == "string" and minetest.get_item_group(item:get_name(), selectCondition) > 0)
+				or (type(selectCondition) == "function" and selectCondition(item)) then
 			fs = fs.."item_image_button["..x..","..y..";1,1;"..item:get_name()..";slot_button_"..i..";]"..
 				"tooltip[slot_button_"..i..";"..voxeldungeon.utils.itemShortDescription(item).."]"
 		else
@@ -68,7 +69,7 @@ function voxeldungeon.itemselector.showSelector(player, label, selectCondition, 
 
 	if armor:is_empty() then
 		fs = fs.."image[7,0;1,1;voxeldungeon_ui_itemslot.png]"
-	elseif selectCondition(armor) then
+	elseif selectCondition == "armor" or (type(selectCondition) == "function" and selectCondition(armor)) then
 		fs = fs.."item_image_button[7,0;1,1;"..armor:get_name()..";slot_button_a;]"..
 				"tooltip[slot_button_a;"..voxeldungeon.utils.itemShortDescription(armor).."]"
 	else

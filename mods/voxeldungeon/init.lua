@@ -30,7 +30,6 @@ voxeldungeon.wp = minetest.get_worldpath()..'/'
 --Load library files
 dofile(mp.."utils.lua")
 dofile(mp.."override.lua")
-dofile(mp.."smartvectortable.lua")
 dofile(mp.."glog.lua")
 dofile(mp.."storage.lua")
 dofile(mp.."playerhandler.lua")
@@ -67,3 +66,17 @@ dofile(mp.."mapgen.lua")
 --Unregistration files
 dofile(mp.."trashbin.lua")
 
+minetest.register_node("voxeldungeon:rat_model", {
+	description = "Rat Model Test",
+
+	groups = {oddly_breakable_by_hand = 1},
+
+	paramtype = "light",
+	sunlight_propogates = true,
+
+	drawtype = "mesh",
+	mesh = "voxelmodel.obj",
+	tiles = {{name = "voxeldungeon_mob_rat_attack.png", animation = {type = "sheet_2d", frames_w = 5, frames_h = 1, frame_length = 0.1}}},
+	inventory_image = "voxeldungeon_icon_mob_rat.png",
+	wield_image = "voxeldungeon_icon_mob_rat.png",
+})

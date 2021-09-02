@@ -28,7 +28,7 @@ local function register_flatnode(name, desc, image, grps, flood)
 		tiles = {i},
 		inventory_image = i,
 		wield_image = i,
-		use_texture_alpha = true,
+		use_texture_alpha = "clip",
 		
 		node_box = {
 			type = "fixed",

@@ -26,7 +26,7 @@ local TIMESCALE = 1
 local MAX_CYCLE_SIZE = 100
 
 local function expandUpon(posses, spreadCondition)
-	local newposses = voxeldungeon.smartVectorTable()
+	local newposses = smart_vector_table.new()
 
 	for i = 1, posses.size() do
 		local p = posses.getVector(i)
@@ -54,10 +54,14 @@ function voxeldungeon.blobs.register(name, def)
 	voxeldungeon.blobs.registered_blobs[name] = def
 	local blob = voxeldungeon.blobs.registered_blobs[name]
 
-	blob.posses = voxeldungeon.smartVectorTable()
+	blob.posses = smart_vector_table.new()
 	local possesString = voxeldungeon.storage.getStr(name.."_posses")
 	if possesString then
-		blob.posses.table = minetest.deserialize(possesString)
+		local table = minetest.deserialize(possesString)
+
+		for i = 1, #table do
+			blob.posses.table[i] = table[i]
+		end
 	end
 
 	blob.timer = voxeldungeon.storage.getNum(name.."_timer") or TIMESCALE

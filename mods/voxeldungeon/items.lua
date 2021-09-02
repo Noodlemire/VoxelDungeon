@@ -173,7 +173,7 @@ local function do_drink(itemstack, user, pointed_thing)
 		if percent > 0 then
 			user:set_hp(user:get_hp() + HT * percent)
 			meta:set_int("voxeldungeon:dew", dew - DEW_VIAL_MAX * percent)
-			voxeldungeon.items.update_vial_description(vial)
+			voxeldungeon.items.update_vial_description(itemstack)
 		elseif user:get_hp() == HT then
 			voxeldungeon.glog.i("Your HP is already full!", user)
 		else
@@ -244,6 +244,8 @@ entitycontrol.override_entity("__builtin:item", {
 	on_step = function(self, dtime, moveresult)
 		super_on_step(self, dtime, moveresult)
 
+		if not self.object:get_pos() then return end
+
 		if voxeldungeon.blobs.get("voxeldungeon:blob_fire", self.object:get_pos()) > 0 then
 			local item = ItemStack(self.itemstring)
 
@@ -267,7 +269,7 @@ local function do_augment(itemstack, user, augment_type)
 	local itemname = itemstack:get_name()
 	voxeldungeon.utils.take_item(user, itemstack)
 
-	voxeldungeon.itemselector.showSelector(user, "Choose a weapon to augment for "..augment_type..".", "weapon", 1, function(player, choice)
+	voxeldungeon.itemselector.showSelector(user, "Choose a weapon to augment for "..augment_type..".", "weapon", function(player, choice)
 		if choice and choice:get_meta():get_string("voxeldungeon:augment") ~= augment_type then
 			choice:get_meta():set_string("voxeldungeon:augment", augment_type)
 			voxeldungeon.glog.h("You augmented your "..voxeldungeon.utils.itemShortDescription(choice).." to increase "..augment_type..".", player)

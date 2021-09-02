@@ -61,6 +61,12 @@ minetest.register_on_joinplayer(function(player)
 		paralysis = 0
 	}
 
+	--player:set_properties({
+	--	eye_height = 0.667,
+	--	collision_box = {-0.5, 0.0, -0.5, 0.5, 1.0, 0.5},
+	--	visual_size = {x = 0.5, y = 0.5, z = 0.5},
+	--})
+
 	voxeldungeon.glog.h("Welcome to Voxel Dungeon!", player)
 end)
 

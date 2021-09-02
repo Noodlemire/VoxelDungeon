@@ -40,8 +40,8 @@ local function queue_hud(target)
 			local i = 0
 
 			for _, buff in pairs(player_buffs[player:get_player_name()]) do
-				player:hud_remove(buff.hud_image_id)
-				player:hud_remove(buff.hud_text_id)
+				if buff.hud_image_id then player:hud_remove(buff.hud_image_id) end
+				if buff.hud_text_id then player:hud_remove(buff.hud_text_id) end
 
 				if not buff.detached and buff.icon then
 					buff.hud_image_id = player:hud_add({
@@ -172,7 +172,7 @@ function voxeldungeon.buffs.attach_buff(name, target, duration, customdata)
 				if duration then
 					local t = buff.description or "!!!NO TEXT FOUND!!!"
 					t = t..": "..buff.left()
-					buff.target:hud_change(buff.hud_text_id, "text", t)
+					if(buff.hud_text_id) then buff.target:hud_change(buff.hud_text_id, "text", t) end
 				end
 			end
 
@@ -741,7 +741,13 @@ voxeldungeon.buffs.register_buff("voxeldungeon:levitating", {
 		if first and buff.target:is_player() then
 			voxeldungeon.glog.i("You float into the air!", buff.target)
 			player_monoids.gravity:add_change(buff.target, 0, "voxeldungeon:levitating")
+
+			voxeldungeon.particles.factory(voxeldungeon.particles.levitation, buff.target, 1, 0.2)
 		end
+	end,
+
+	do_effect = function(buff)
+		voxeldungeon.particles.factory(voxeldungeon.particles.levitation, buff.target, 1, 0.2)
 	end,
 
 	on_detach = function(buff)

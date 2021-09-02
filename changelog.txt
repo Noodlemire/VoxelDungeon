@@ -282,3 +282,25 @@ Alpha 1.6.0:
 
 	Performance:
 		Instead of a blob always iterating over every single position it covers, it instead is limited to 100 positions per second. So, extremely large blobs slow themselves more than the server as a whole.
+
+Alpha 1.6.1:
+	Misc Changes:
+		Buff-related particles are now visible in first person
+		Added particles for levitating players
+
+	Mods added:
+		Voxelmodel (Currently unused outside of testing purposes)
+
+	Updates:
+		Various mods to Minetest Game 5.4.1: beds, bucket, creative, default, doors, env_sounds, farming, fire, game_commands, player_api, stairs, tnt, vessels
+		HBHunger to 1.1.1
+		Hudbars to 2.3.3
+		Mobkit to CDB release 2021-02-02
+
+	Fixed:
+		Crash that could be caused by unloaded objects
+		Crash caused by having a buff
+		Crash caused by Weightstone
+		Crash caused by Dew Vial
+		Crash caused by loading the game when a player is already inflicted with a buff of some kind
+		Buff-related particles being offset weirdly when attached to players

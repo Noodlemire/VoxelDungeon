@@ -41,17 +41,19 @@ function voxeldungeon.projectiles.register(name, entdef)
 		},
 	}
 
-	entdef.on_step = function(self, dtime)
+	entdef.on_step = function(self, dtime, moveresult)
 		local pos = self.object:get_pos()
 
-		on_step(self, dtime)
+		on_step(self, dtime, moveresult)
 		if not self.object then return end
+
+		if not self.object:get_pos() then minetest.log("fail") return end
 
 		local oldtime = self.timer or 0
 		self.timer = oldtime + dtime
 		local rate = 15
 		if self._trail and math.floor(rate * oldtime) ~= math.floor(rate * self.timer) then
-			voxeldungeon.particles.burst(self._trail, self.object:get_pos(), 1)
+			voxeldungeon.particles.burst(self._trail, pos, 1)
 		end
 
 		if self.timer > 30 then

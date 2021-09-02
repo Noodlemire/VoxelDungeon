@@ -442,6 +442,30 @@ function voxeldungeon.particles.grass(pos, customdata)
 	return particle
 end
 
+function voxeldungeon.particles.levitation(pos)
+	pos = vector.add(pos, 
+	{
+		x = voxeldungeon.utils.randomDecimal(0.5, -0.5),
+		y = 0,
+		z = voxeldungeon.utils.randomDecimal(0.5, -0.5),
+	})
+
+	local particle = minetest.add_entity(pos, "voxeldungeon:particle_gas")
+
+	if particle then
+		particle = particle:get_luaentity()
+
+		particle._lifespan = 0.6
+		particle._radius = 0.4
+
+		particle:_motion({down = 5})
+
+		particle._animate(0.075)
+	end
+
+	return particle
+end
+
 function voxeldungeon.particles.light(pos)
 	pos = vector.add(pos, 
 	{
@@ -616,19 +640,14 @@ end
 function voxeldungeon.particles.emitter(func, target, duration, customdata)
 	local particle = func(target:get_pos(), customdata or {})
 
-	local pos = {x = 0, y = 5, z = 0}
-	if target:is_player() then
-		pos = target:get_pos()
-	end
-
-	particle.object:set_attach(target, "", pos, {x = 0, y = 0, z = 0})
+	particle.object:set_attach(target, "", {x = 0, y = 8, z = 0}, {x = 0, y = 0, z = 0}, true)
 	particle._lifespan = duration
 end
 
-function voxeldungeon.particles.factory(func, pos, duration, interval, customdata)
-	func(pos, customdata or {})
+function voxeldungeon.particles.factory(func, target, duration, interval, customdata)
+	func(target.get_pos and target:get_pos() or target, customdata or {})
 
 	if duration > 0 then
-		minetest.after(interval, voxeldungeon.particles.factory, func, pos, duration - interval, interval, customdata)
+		minetest.after(interval, voxeldungeon.particles.factory, func, target, duration - interval, interval, customdata)
 	end
 end
