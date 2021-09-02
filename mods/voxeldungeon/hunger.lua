@@ -34,7 +34,10 @@ local function register_food(name, def)
 	end
 
 	minetest.register_craftitem("voxeldungeon:"..name, def)
-	hbhunger.register_food("voxeldungeon:"..name, def.foodval)
+
+	if minetest.settings:get_bool("enable_damage") then
+		hbhunger.register_food("voxeldungeon:"..name, def.foodval)
+	end
 end
 
 register_food("ration", {description = "Ration of Food\n \nNothing fancy here: dried meat, some biscuits - things like that.", foodval = 8})

@@ -304,3 +304,5 @@ Alpha 1.6.1:
 		Crash caused by Dew Vial
 		Crash caused by loading the game when a player is already inflicted with a buff of some kind
 		Buff-related particles being offset weirdly when attached to players
+		Crash caused by trying to start the game with damage disabled.
+
