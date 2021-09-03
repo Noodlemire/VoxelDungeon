@@ -1,0 +1,43 @@
+Smart Vector Table [smart_vector_table]
+Modding API Reference
+==============================================
+
+
+
+[SmartVectorTable]
+
+A table that accepts 3D Vectors as indices in a relatively efficient manner. It's built to be able to handle a large quantity of indices at a time, with no regards to how close or far apart specific vectors are.
+
+Note that in this API, a "Vector" is always defined as a table in the specific format of {x = <Number>, y = <Number>, z = <Number>}
+
+### Constructor:
+
+* smart_vector_table.new() - Returns a fresh, blank SVT.
+
+### Fields:
+
+* .table - The actual table that the SVT object indexes with every operation, maintained in a specific order.
+	--Try to avoid directly interacting with this if you can, as any out-of-order vectors will break the whole SVT.
+
+### Functions:
+
+* .set(KeyVector, value) - Put a value into the table at the KeyVector's index. The value can be of any type.
+
+* .del(KeyVector) - Completely delete the contents at the KeyVector's index, as well as the KeyVector itself.
+	--This is NOT automatically called if you set() a value to 0, "", or even nil. Keep that in mind if you need to clear values often.
+
+* .get(KeyVector) - Returns whatever value was at the given KeyVector.
+
+* .getIndex(KeyVector) - Returns the numerical index that the given KeyVector currently belongs to.
+	--Be cautious of the index changing, which may happen if vectors are added or removed from the SVT.
+
+* .getVector(i) - Returns the KeyVector that was at the given numerical index.
+* .getValue(i) - Returns the value that was the the given numerical index.
+* .size() - Returns the number of indices that the SVT contains.
+	--Usually used when iterating through the table.
+
+* .add(KeyVector, value) - If data already exists at KeyVector, this will attempt to add the new value to it, rather than replacing it like set().
+	--It's usually a bad idea to use this with non-numerical values.
+
+* .combineWith(SmartVectorTable) - Attempts to add all contents of the provided SVT into the SVT that called the function.
+	--It's usually a bad idea to use this with non-numerical values.
