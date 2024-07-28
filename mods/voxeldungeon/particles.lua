@@ -100,7 +100,7 @@ function voxeldungeon.particles.register_shape(name, def)
 			local g = voxeldungeon.utils.tohex(color.g)
 			local b = voxeldungeon.utils.tohex(color.b)
 
-			self.object:settexturemod("^[multiply:#"..r..g..b)
+			self.object:set_texture_mod("^[multiply:#"..r..g..b)
 		end
 
 		self._gradient = function(self, colors)

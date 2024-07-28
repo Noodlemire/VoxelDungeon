@@ -162,3 +162,11 @@ affirmer.
 
 For more details:
 https://creativecommons.org/publicdomain/zero/1.0/
+
+Textures by Phiwari (CC0)
+  doors_door_phiwari.png
+  doors_item_phiwari.png
+
+Textures by IceAgeComing (CC0)
+  doors_door_iceage.png
+  doors_item.iceage.png

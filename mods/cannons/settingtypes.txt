@@ -1,0 +1,5 @@
+# enables en exploding Cannonball
+cannons_enable_explosion (Enable explotion) bool true
+
+# enables an burning Cannonball
+cannons_enable_fire (Enable Fire) bool true

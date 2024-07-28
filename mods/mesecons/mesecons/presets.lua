@@ -16,9 +16,9 @@ mesecon.rules.default = {
 	{x =  0, y = -1, z = -1},
 }
 
-mesecon.rules.floor = mesecon.mergetable(mesecon.rules.default, {{x = 0, y = -1, z = 0}})
+mesecon.rules.floor = mesecon.merge_rule_sets(mesecon.rules.default, {{x = 0, y = -1, z = 0}})
 
-mesecon.rules.pplate = mesecon.mergetable(mesecon.rules.floor, {{x = 0, y = -2, z = 0}})
+mesecon.rules.pplate = mesecon.merge_rule_sets(mesecon.rules.floor, {{x = 0, y = -2, z = 0}})
 
 mesecon.rules.buttonlike = {
 	{x = 1,  y =  0, z =  0},
@@ -64,6 +64,8 @@ local rules_buttonlike = {
 }
 
 local function rules_from_dir(ruleset, dir)
+	if not dir then return {} end
+
 	if dir.x ==  1 then return ruleset.xp end
 	if dir.y ==  1 then return ruleset.yp end
 	if dir.z ==  1 then return ruleset.zp end

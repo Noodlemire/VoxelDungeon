@@ -1,0 +1,22 @@
+#
+## Alias OBJ Material File
+# Exported from SketchUp, (c) 2000-2012 Trimble Navigation Limited
+
+newmtl default_wood
+Ka 0.000000 0.000000 0.000000
+Kd 0.501961 0.388235 0.215686
+Ks 0.330000 0.330000 0.330000
+map_Kd ship_cannonstand/default_wood.png
+
+newmtl _1
+Ka 0.000000 0.000000 0.000000
+Kd 0.600000 0.368627 0.164706
+Ks 0.330000 0.330000 0.330000
+map_Kd ship_cannonstand/_1.jpg
+
+newmtl Metal_Rough
+Ka 0.000000 0.000000 0.000000
+Kd 0.600000 0.615686 0.627451
+Ks 0.330000 0.330000 0.330000
+map_Kd ship_cannonstand/Metal_Rough.jpg
+

@@ -1,4 +1,3 @@
-
 [3d_armor]
 
 armor_material_wood (Enable wood armor) bool true
@@ -9,13 +8,10 @@ armor_material_diamond (Enable diamond armor) bool true
 armor_material_gold (Enable gold armor) bool true
 armor_material_mithril (Enable mithril armor) bool true
 armor_material_crystal (Enable crystal armor) bool true
+armor_material_nether (Enable nether armor) bool true
 
 # Increase this if you get initialization glitches when a player first joins.
 armor_init_delay (Initialization delay) int 2
-
-# Number of initialization attempts.
-# Use in conjunction with armor_init_delay if initialization problems persist.
-armor_init_times (Initialization attempts) int 10
 
 # Increase this if armor is not getting into bones due to server lag.
 armor_bones_delay (Delay for bones) int 1
@@ -38,17 +34,29 @@ armor_level_multiplier (Armor effectiveness multiplier) float 1
 # eg: armor_heal_multiplier = 0 will disable healing altogether.
 armor_heal_multiplier (Armor healing multiplier) float 1
 
+# Armor set item names, remove or add items to include them or remove them from whats considered an Armor set.
+armor_set_elements (Armor set items) string head torso legs feet shield
+
+# Bonus multiplier when wearing armor set, set to the same as armor_level_multiplier to disable
+armor_set_multiplier (Armor Set Bonus multiplier) float 1.1
+
 # Enable water protection (periodically restores breath when activated).
 armor_water_protect (Enable water protection) bool true
 
 # Enable fire protection (defaults true if using ethereal mod).
 armor_fire_protect (Enable fire protection) bool false
 
+# Enable fire damage from torches (defaults true if using ethereal mod).
+armor_fire_protect_torch (Enable fire protection torch damage) bool false
+
 # Enable punch damage effects.
 armor_punch_damage (Enable damage effects) bool true
 
 # Enable migration of old armor inventories.
 armor_migrate_old_inventory (Migrate old armor inventories) bool true
+
+# Armor is not visible on player model when enabled.
+armor_transparent (Transparent armor) bool false
 
 
 [shields]

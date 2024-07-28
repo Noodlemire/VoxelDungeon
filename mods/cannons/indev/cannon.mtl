@@ -1,0 +1,16 @@
+#
+## Alias OBJ Material File
+# Exported from SketchUp, (c) 2000-2012 Trimble Navigation Limited
+
+newmtl cannons_cannon_top
+Ka 0.000000 0.000000 0.000000
+Kd 0.239216 0.239216 0.239216
+Ks 0.330000 0.330000 0.330000
+map_Kd cannon/cannons_cannon_top.png
+
+newmtl cannons_cannon_side
+Ka 0.000000 0.000000 0.000000
+Kd 0.231373 0.231373 0.231373
+Ks 0.330000 0.330000 0.330000
+map_Kd cannon/cannons_cannon_side.png
+

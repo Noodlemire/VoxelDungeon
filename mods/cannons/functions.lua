@@ -5,9 +5,9 @@ function cannons.destroy(pos,range)
 	for z=-range,range do
 		if x*x+y*y+z*z <= range * range + range then
 			local np={x=pos.x+x,y=pos.y+y,z=pos.z+z}
-			local n = minetest.env:get_node(np)
+			local n = minetest.get_node(np)
 			if n.name ~= "air" then
-				minetest.env:remove_node(np)
+				minetest.remove_node(np)
 			end
 		end
 	end
@@ -215,26 +215,59 @@ cannons.on_construct_locks = function(pos)
 end
 
 function cannons.nodehitparticles(pos,node)
-if type(minetest.registered_nodes[node.name]) == "table" and type(minetest.registered_nodes[node.name].tiles) == "table" and type(minetest.registered_nodes[node.name].tiles[1])== "string" then
-local texture = minetest.registered_nodes[node.name].tiles[1]
-	minetest.add_particlespawner(
-        30, --amount
-        0.5, --time
-        {x=pos.x-0.3, y=pos.y+0.3, z=pos.z-0.3}, --minpos
-        {x=pos.x+0.3, y=pos.y+0.5, z=pos.z+0.3}, --maxpos
-        {x=0, y=2, z=0}, --minvel
-        {x=0, y=3, z=0}, --maxvel
-        {x=-4,y=-4,z=-4}, --minacc
-        {x=4,y=-4,z=4}, --maxacc
-        0.1, --minexptime
-        1, --maxexptime
-        1, --minsize
-        3, --maxsize
-        false, --collisiondetection
-        texture --texture
-    )
-	end
+
+	minetest.add_particlespawner({
+		amount = 30,
+		-- Number of particles spawned over the time period `time`.
+
+		time = 0.5,
+		-- Lifespan of spawner in seconds.
+		-- If time is 0 spawner has infinite lifespan and spawns the `amount` on
+		-- a per-second basis.
+
+		minpos =  {x=pos.x-0.3, y=pos.y+0.3, z=pos.z-0.3},
+		maxpos =  {x=pos.x+0.3, y=pos.y+0.5, z=pos.z+0.3},
+		minvel = {x=0, y=2, z=0},
+		maxvel = {x=0, y=3, z=0},
+		minacc = {x=-4,y=-4,z=-4},
+		maxacc = {x=4,y=-4,z=4},
+		minexptime = 0.1,
+		maxexptime = 1,
+		minsize = 1,
+		maxsize = 3,
+		-- The particles' properties are random values between the min and max
+		-- values.
+		-- applies to: pos, velocity, acceleration, expirationtime, size
+		-- If `node` is set, min and maxsize can be set to 0 to spawn
+		-- randomly-sized particles (just like actual node dig particles).
+
+		collisiondetection = false,
+		-- If true collide with `walkable` nodes and, depending on the
+		-- `object_collision` field, objects too.
+
+		collision_removal = false,
+		-- If true particles are removed when they collide.
+		-- Requires collisiondetection = true to have any effect.
+
+		object_collision = false,
+		-- If true particles collide with objects that are defined as
+		-- `physical = true,` and `collide_with_objects = true,`.
+		-- Requires collisiondetection = true to have any effect.
+
+		--attached = ObjectRef,
+		-- If defined, particle positions, velocities and accelerations are
+		-- relative to this object's position and yaw
+
+		vertical = false,
+		-- If true face player using y axis only
+
+		node = node,
+		-- Optional, if specified the particles will have the same appearance as
+		-- node dig particles for the given node.
+		-- `texture` and `animation` will be ignored if this is set.
+	})
 end
+
 function cannons.fire(pos,node,puncher)
 	local meta = minetest.get_meta(pos)
 	local inv = meta:get_inventory()
@@ -269,16 +302,58 @@ function cannons.fire(pos,node,puncher)
 
 
 		local settings = cannons.get_settings(muni.name)
-		local obj=minetest.env:add_entity(pos, cannons.get_entity(muni.name))
-		obj:setvelocity({x=dir.x*settings.velocity, y=-1, z=dir.z*settings.velocity})
-		obj:setacceleration({x=dir.x*-3, y=-settings.gravity, z=dir.z*-3})
-		minetest.add_particlespawner(50,0.5,
-    pos, pos,
-    {x=dir.x*settings.velocity, y=-1, z=dir.z*settings.velocity}, {x=dir.x*settings.velocity/2, y=-1, z=dir.z*settings.velocity/2},
-    {x=dir.x*-3/4, y=-settings.gravity*2, z=dir.z*-3/4}, {x=dir.x*-3/2, y=-settings.gravity, z=dir.z*-3/2},
-    0.1, 0.5,--time
-    0.5, 1,
-    false, "cannons_gunpowder.png")
+		local obj=minetest.add_entity(pos, cannons.get_entity(muni.name))
+		obj:set_velocity({x=dir.x*settings.velocity, y=-1, z=dir.z*settings.velocity})
+		obj:set_acceleration({x=dir.x*-3, y=-settings.gravity, z=dir.z*-3})
+
+		minetest.add_particlespawner({
+			amount = 50,
+			-- Number of particles spawned over the time period `time`.
+		
+			time = 0.5,
+			-- Lifespan of spawner in seconds.
+			-- If time is 0 spawner has infinite lifespan and spawns the `amount` on
+			-- a per-second basis.
+		
+			minpos = pos,
+			maxpos = pos,
+			minvel = {x=dir.x*settings.velocity, y=-1, z=dir.z*settings.velocity},
+			maxvel = {x=dir.x*settings.velocity/2, y=-1, z=dir.z*settings.velocity/2},
+			minacc = {x=dir.x*-3/4, y=-settings.gravity*2, z=dir.z*-3/4},
+			maxacc = {x=dir.x*-3/2, y=-settings.gravity, z=dir.z*-3/2},
+			minexptime = 0.1,
+			maxexptime = 0.5,
+			minsize = 0.5,
+			maxsize = 1,
+			-- The particles' properties are random values between the min and max
+			-- values.
+			-- applies to: pos, velocity, acceleration, expirationtime, size
+			-- If `node` is set, min and maxsize can be set to 0 to spawn
+			-- randomly-sized particles (just like actual node dig particles).
+		
+			collisiondetection = false,
+			-- If true collide with `walkable` nodes and, depending on the
+			-- `object_collision` field, objects too.
+		
+			collision_removal = false,
+			-- If true particles are removed when they collide.
+			-- Requires collisiondetection = true to have any effect.
+		
+			object_collision = false,
+			-- If true particles collide with objects that are defined as
+			-- `physical = true,` and `collide_with_objects = true,`.
+			-- Requires collisiondetection = true to have any effect.
+		
+			--attached = ObjectRef,
+			-- If defined, particle positions, velocities and accelerations are
+			-- relative to this object's position and yaw
+		
+			vertical = false,
+			-- If true face player using y axis only
+		
+			texture = "cannons_gunpowder.png",
+			-- The texture of the particle
+		})
 	end
 end
 
@@ -306,12 +381,12 @@ function cannons.register_muni(node,entity)
 	cannons.registered_muni[node] = {}
 	cannons.registered_muni[node].entity = entity
 	local name = node:split(":")
-	cannons.registered_muni[node].entity.name = minetest.get_current_modname()..":entity_"..name[1].."_"..name[2]
+	cannons.registered_muni[node].entity.name =name[1]..":cannons_entity_"..name[2]
 	cannons.registered_muni[node].entity.on_step = function(self, dtime)
 		self.timer=self.timer+dtime
 		if self.timer >= 0.3 then --easiesst less laggiest way to find out that it left his start position
-			local pos = self.object:getpos()
-			local node = minetest.env:get_node(pos)
+			local pos = self.object:get_pos()
+			local node = minetest.get_node(pos)
 
 			if node.name == "air" then
 				local objs = minetest.get_objects_inside_radius({x=pos.x,y=pos.y,z=pos.z}, self.range)
@@ -368,7 +443,7 @@ function cannons.on_ball_punch(pos, node, puncher, pointed_thing)
 	end
 	local nodearr = string.split(node.name,"_stack_");
 	local item = nodearr[1];
-	local level = tonumber(nodearr[2]);
+	local level = tonumber(nodearr[2]) or 0;
 	puncher:get_inventory():add_item('main', item)
 	if level > 1 then
 		node.name = item.."_stack_"..level-1
@@ -522,11 +597,11 @@ local apple={
 	end,
 	on_node_hit = function(self,pos,node)
 		pos = self.lastpos
-		minetest.env:set_node({x=pos.x, y=pos.y, z=pos.z},{name="default:apple"})
+		minetest.set_node({x=pos.x, y=pos.y, z=pos.z},{name="default:apple"})
 		minetest.sound_play("canons_hit",
 			{pos = pos, gain = 1.0, max_hear_distance = 32,})
 		self.object:remove()
 	end,
 
 }
-cannons.register_muni("default:apple",apple)
+--cannons.register_muni("default:apple",apple)

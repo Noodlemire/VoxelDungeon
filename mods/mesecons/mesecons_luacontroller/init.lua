@@ -28,6 +28,8 @@
 -- (see where local env is defined)
 -- Something nice to play is is appending minetest.env to it.
 
+local S = minetest.get_translator(minetest.get_current_modname())
+
 local BASENAME = "mesecons_luacontroller:luacontroller"
 
 local rules = {
@@ -43,13 +45,16 @@ local rules = {
 ------------------
 -- These helpers are required to set the port states of the luacontroller
 
+-- Updates the real port states according to the signal change.
+-- Returns whether the real port states actually changed.
 local function update_real_port_states(pos, rule_name, new_state)
 	local meta = minetest.get_meta(pos)
 	if rule_name == nil then
 		meta:set_int("real_portstates", 1)
-		return
+		return true
 	end
-	local n = meta:get_int("real_portstates") - 1
+	local real_portstates = meta:get_int("real_portstates")
+	local n = real_portstates - 1
 	local L = {}
 	for i = 1, 4 do
 		L[i] = n % 2
@@ -60,18 +65,18 @@ local function update_real_port_states(pos, rule_name, new_state)
 	if rule_name.x == nil then
 		for _, rname in ipairs(rule_name) do
 			local port = pos_to_side[rname.x + (2 * rname.z) + 3]
-			L[port] = (newstate == "on") and 1 or 0
+			L[port] = (new_state == "on") and 1 or 0
 		end
 	else
 		local port = pos_to_side[rule_name.x + (2 * rule_name.z) + 3]
 		L[port] = (new_state == "on") and 1 or 0
 	end
-	meta:set_int("real_portstates",
-		1 +
-		1 * L[1] +
-		2 * L[2] +
-		4 * L[3] +
-		8 * L[4])
+	local new_portstates = 1 + 1 * L[1] + 2 * L[2] + 4 * L[3] + 8 * L[4]
+	if new_portstates ~= real_portstates then
+		meta:set_int("real_portstates", new_portstates)
+		return true
+	end
+	return false
 end
 
 
@@ -172,7 +177,7 @@ local function burn_controller(pos)
 	minetest.after(0.2, mesecon.receptor_off, pos, mesecon.rules.flat)
 end
 
-local function overheat(pos, meta)
+local function overheat(pos)
 	if mesecon.do_overheat(pos) then -- If too hot
 		burn_controller(pos)
 		return true
@@ -198,11 +203,13 @@ end
 -------------------------
 
 local function safe_print(param)
-	local string_meta = getmetatable("")
-	local sandbox = string_meta.__index
-	string_meta.__index = string -- Leave string sandbox temporarily
-	print(dump(param))
-	string_meta.__index = sandbox -- Restore string sandbox
+	if mesecon.setting("luacontroller_print_behavior", "log") == "log" then
+		local string_meta = getmetatable("")
+		local sandbox = string_meta.__index
+		string_meta.__index = string -- Leave string sandbox temporarily
+		minetest.log("action", string.format("[mesecons_luacontroller] print(%s)", dump(param)))
+		string_meta.__index = sandbox -- Restore string sandbox
+	end
 end
 
 local function safe_date()
@@ -229,6 +236,16 @@ local function safe_string_find(...)
 	end
 
 	return string.find(...)
+end
+
+-- do not allow pattern matching in string.split (see string.find for details)
+local function safe_string_split(...)
+	if select(5, ...) then
+		debug.sethook() -- Clear hook
+		error("string.split: 'sep_is_pattern' (fifth parameter) may not be used in a Luacontroller")
+	end
+
+	return string.split(...)
 end
 
 local function remove_functions(x)
@@ -266,6 +283,46 @@ local function remove_functions(x)
 	return x
 end
 
+local function validate_iid(iid)
+	if not iid then return true end -- nil is OK
+
+	local limit = mesecon.setting("luacontroller_interruptid_maxlen", 256)
+	if type(iid) == "string" then
+		if #iid <= limit then return true end -- string is OK unless too long
+		return false, "An interrupt ID was too large!"
+	end
+	if type(iid) == "number" or type(iid) == "boolean" then return true, "Non-string interrupt IDs are deprecated" end
+
+	local warn
+	local seen = {}
+	local function check(t)
+		if type(t) == "function" then
+			warn = "Functions cannot be used in interrupt IDs"
+			return false
+		end
+		if type(t) ~= "table" then
+			return true
+		end
+		if seen[t] then
+			warn = "Non-tree-like tables are forbidden as interrupt IDs"
+			return false
+		end
+		seen[t] = true
+		for k, v in pairs(t) do
+			if not check(k) then return false end
+			if not check(v) then return false end
+		end
+		return true
+	end
+	if not check(iid) then return false, warn end
+
+	if #minetest.serialize(iid) > limit then
+		return false, "An interrupt ID was too large!"
+	end
+
+	return true, "Table interrupt IDs are deprecated and are unreliable; use strings instead"
+end
+
 -- The setting affects API so is not intended to be changeable at runtime
 local get_interrupt
 if mesecon.setting("luacontroller_lightweight_interrupts", false) then
@@ -282,26 +339,18 @@ else
 	-- itbl: Flat table of functions to run after sandbox cleanup, used to prevent various security hazards
 	get_interrupt = function(pos, itbl, send_warning)
 		-- iid = interrupt id
-		local function interrupt(time, iid)
+		return function (time, iid)
 			-- NOTE: This runs within string metatable sandbox, so don't *rely* on anything of the form (""):y
 			-- Hence the values get moved out. Should take less time than original, so totally compatible
 			if type(time) ~= "number" then error("Delay must be a number") end
 			table.insert(itbl, function ()
 				-- Outside string metatable sandbox, can safely run this now
 				local luac_id = minetest.get_meta(pos):get_int("luac_id")
-				-- Check if IID is dodgy, so you can't use interrupts to store an infinite amount of data.
-				-- Note that this is safe from alter-after-free because this code gets run after the sandbox has ended.
-				-- This runs outside of the timer and *shouldn't* harm perf. unless dodgy data is being sent in the first place
-				iid = remove_functions(iid)
-				local msg_ser = minetest.serialize(iid)
-				if #msg_ser <= mesecon.setting("luacontroller_interruptid_maxlen", 256) then
-					mesecon.queue:add_action(pos, "lc_interrupt", {luac_id, iid}, time, iid, 1)
-				else
-					send_warning("An interrupt ID was too large!")
-				end
+				local ok, warn = validate_iid(iid)
+				if ok then mesecon.queue:add_action(pos, "lc_interrupt", {luac_id, iid}, time, iid, 1) end
+				if warn then send_warning(warn) end
 			end)
 		end
-		return interrupt
 	end
 end
 
@@ -339,7 +388,10 @@ local function clean_and_weigh_digiline_message(msg, back_references)
 		return msg, #msg + 25
 	elseif t == "number" then
 		-- Numbers are passed by value so need not be touched, and cost 8 bytes
-		-- as all numbers in Lua are doubles.
+		-- as all numbers in Lua are doubles. NaN values are removed.
+		if msg ~= msg then
+			return nil, 0
+		end
 		return msg, 8
 	elseif t == "boolean" then
 		-- Booleans are passed by value so need not be touched, and cost 1
@@ -435,7 +487,12 @@ local safe_globals = {
 
 local function create_environment(pos, mem, event, itbl, send_warning)
 	-- Gather variables for the environment
-	local vports = minetest.registered_nodes[minetest.get_node(pos).name].virtual_portstates
+	local node_def = minetest.registered_nodes[minetest.get_node(pos).name]
+	if not node_def then return end
+
+	local vports = node_def.virtual_portstates
+	if not vports then return end
+
 	local vports_copy = {}
 	for k, v in pairs(vports) do vports_copy[k] = v end
 	local rports = get_real_port_states(pos)
@@ -463,6 +520,7 @@ local function create_environment(pos, mem, event, itbl, send_warning)
 			reverse = string.reverse,
 			sub = string.sub,
 			find = safe_string_find,
+			split = safe_string_split,
 		},
 		math = {
 			abs = math.abs,
@@ -580,9 +638,8 @@ local function run_inner(pos, code, event)
 	if overheat(pos) then return true, "" end
 	if ignore_event(event, meta) then return true, "" end
 
-	-- Load code & mem from meta
+	-- Load mem from meta
 	local mem  = load_memory(meta)
-	local code = meta:get_string("code")
 
 	-- 'Last warning' label.
 	local warning = ""
@@ -593,16 +650,19 @@ local function run_inner(pos, code, event)
 	-- Create environment
 	local itbl = {}
 	local env = create_environment(pos, mem, event, itbl, send_warning)
+	if not env then return false, "Env does not exist. Controller has been moved?" end
 
+	local success, msg
 	-- Create the sandbox and execute code
-	local f, msg = create_sandbox(code, env)
+	local f
+	f, msg = create_sandbox(code, env)
 	if not f then return false, msg end
 	-- Start string true sandboxing
 	local onetruestring = getmetatable("")
 	-- If a string sandbox is already up yet inconsistent, something is very wrong
 	assert(onetruestring.__index == string)
 	onetruestring.__index = env.string
-	local success, msg = pcall(f)
+	success, msg = pcall(f)
 	onetruestring.__index = string
 	-- End string true sandboxing
 	if not success then return false, msg end
@@ -632,6 +692,7 @@ local function reset_formspec(meta, code, errmsg)
 	code = minetest.formspec_escape(code or "")
 	errmsg = minetest.formspec_escape(tostring(errmsg or ""))
 	meta:set_string("formspec", "size[12,10]"
+		.."style_type[label,textarea;font=mono]"
 		.."background[-0.2,-0.25;12.4,10.75;jeija_luac_background.png]"
 		.."label[0.1,8.3;"..errmsg.."]"
 		.."textarea[0.2,0.2;12.2,9.5;code;;"..code.."]"
@@ -715,7 +776,7 @@ local selection_box = {
 local digiline = {
 	receptor = {},
 	effector = {
-		action = function(pos, node, channel, msg)
+		action = function(pos, _, channel, msg)
 			msg = clean_and_weigh_digiline_message(msg)
 			run(pos, {type = "digiline", channel = channel, msg = msg})
 		end
@@ -733,7 +794,7 @@ local function set_program(pos, code)
 	return run(pos, {type="program"})
 end
 
-local function on_receive_fields(pos, form_name, fields, sender)
+local function on_receive_fields(pos, _, fields, sender)
 	if not fields.program then
 		return
 	end
@@ -792,8 +853,9 @@ for d = 0, 1 do
 		effector = {
 			rules = input_rules[cid],
 			action_change = function (pos, _, rule_name, new_state)
-				update_real_port_states(pos, rule_name, new_state)
-				run(pos, {type=new_state, pin=rule_name})
+				if update_real_port_states(pos, rule_name, new_state) then
+					run(pos, {type=new_state, pin=rule_name})
+				end
 			end,
 		},
 		receptor = {
@@ -807,7 +869,7 @@ for d = 0, 1 do
 	}
 
 	minetest.register_node(node_name, {
-		description = "Luacontroller",
+		description = S("Luacontroller"),
 		drawtype = "nodebox",
 		tiles = {
 			top,
@@ -827,7 +889,7 @@ for d = 0, 1 do
 		node_box = node_box,
 		on_construct = reset_meta,
 		on_receive_fields = on_receive_fields,
-		sounds = default.node_sound_stone_defaults(),
+		sounds = mesecon.node_sound.stone,
 		mesecons = mesecons,
 		digiline = digiline,
 		-- Virtual portstates are the ports that
@@ -838,7 +900,7 @@ for d = 0, 1 do
 			c = c == 1,
 			d = d == 1,
 		},
-		after_dig_node = function (pos, node)
+		after_dig_node = function (pos)
 			mesecon.do_cooldown(pos)
 			mesecon.receptor_off(pos, output_rules)
 		end,
@@ -876,7 +938,7 @@ minetest.register_node(BASENAME .. "_burnt", {
 	node_box = node_box,
 	on_construct = reset_meta,
 	on_receive_fields = on_receive_fields,
-	sounds = default.node_sound_stone_defaults(),
+	sounds = mesecon.node_sound.stone,
 	virtual_portstates = {a = false, b = false, c = false, d = false},
 	mesecons = {
 		effector = {
@@ -901,4 +963,3 @@ minetest.register_craft({
 		{'group:mesecon_conductor_craftable', 'group:mesecon_conductor_craftable', ''},
 	}
 })
-

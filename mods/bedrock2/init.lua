@@ -1,17 +1,11 @@
--- Boilerplate to support localized strings if intllib mod is installed.
-local S
-if minetest.get_modpath("intllib") then
-	S = intllib.Getter()
-else
-	S = function(s) return s end
-end
+local S = minetest.get_translator("bedrock2")
 
 local bedrock = {}
 
 bedrock.layer = -30912 -- determined as appropriate by experiment
 bedrock.node = {name = "bedrock2:bedrock"}
 
-local depth = tonumber(minetest.setting_get("bedrock2_y"))
+local depth = tonumber(minetest.settings:get("bedrock2_y"))
 if depth ~= nil then
 	bedrock.layer = depth
 end
@@ -41,7 +35,7 @@ minetest.register_node("bedrock2:bedrock", {
 	description = S("Bedrock"),
 	_doc_items_longdesc = S("Bedrock is a very hard block. It cannot be mined, altered, destroyed or moved by any means. It appears at the bottom of the world in a flat layer."),
 	tiles = {"bedrock2_bedrock.png"},
-	groups = {immortal=1, not_in_creative_inventory=1, },
+	groups = {immortal=1, unbreakable=1, not_in_creative_inventory=1, },
 	sounds = { footstep = { name = "bedrock2_step", gain = 1 } },
 	is_ground_content = false,
 	on_blast = function() end,

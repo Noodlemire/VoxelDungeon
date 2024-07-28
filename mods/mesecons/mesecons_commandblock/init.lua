@@ -1,6 +1,8 @@
+local S = minetest.get_translator(minetest.get_current_modname())
+
 minetest.register_chatcommand("say", {
 	params = "<text>",
-	description = "Say <text> as the server",
+	description = S("Say <text> as the server"),
 	privs = {server=true},
 	func = function(name, param)
 		minetest.chat_send_all(name .. ": " .. param)
@@ -9,7 +11,8 @@ minetest.register_chatcommand("say", {
 
 minetest.register_chatcommand("tell", {
 	params = "<name> <text>",
-	description = "Say <text> to <name> privately",
+	description = S("Say <text> to <name> privately"),
+	privs = {shout=true},
 	func = function(name, param)
 		local found, _, target, message = param:find("^([^%s]+)%s+(.*)$")
 		if found == nil then
@@ -25,7 +28,7 @@ minetest.register_chatcommand("tell", {
 
 minetest.register_chatcommand("hp", {
 	params = "<name> <value>",
-	description = "Set health of <name> to <value> hitpoints",
+	description = S("Set health of <name> to <value> hitpoints"),
 	privs = {ban=true},
 	func = function(name, param)
 		local found, _, target, value = param:find("^([^%s]+)%s+(%d+)$")
@@ -78,7 +81,7 @@ local function after_place(pos, placer)
 	end
 end
 
-local function receive_fields(pos, formname, fields, sender)
+local function receive_fields(pos, _, fields, sender)
 	if not fields.submit then
 		return
 	end
@@ -110,7 +113,7 @@ local function resolve_commands(commands, pos)
 	local nearest, farthest = nil, nil
 	local min_distance, max_distance = math.huge, -1
 	for index, player in pairs(players) do
-		local distance = vector.distance(pos, player:getpos())
+		local distance = vector.distance(pos, player:get_pos())
 		if distance < min_distance then
 			min_distance = distance
 			nearest = player:get_player_name()
@@ -174,11 +177,12 @@ end
 local function can_dig(pos, player)
 	local meta = minetest.get_meta(pos)
 	local owner = meta:get_string("owner")
-	return owner == "" or owner == player:get_player_name()
+	return owner == "" or owner == player:get_player_name() or
+		minetest.check_player_privs(player, "protection_bypass")
 end
 
 minetest.register_node("mesecons_commandblock:commandblock_off", {
-	description = "Command Block",
+	description = S("Command Block"),
 	tiles = {"jeija_commandblock_off.png"},
 	inventory_image = minetest.inventorycube("jeija_commandblock_off.png"),
 	is_ground_content = false,
@@ -187,7 +191,7 @@ minetest.register_node("mesecons_commandblock:commandblock_off", {
 	after_place_node = after_place,
 	on_receive_fields = receive_fields,
 	can_dig = can_dig,
-	sounds = default.node_sound_stone_defaults(),
+	sounds = mesecon.node_sound.stone,
 	mesecons = {effector = {
 		action_on = commandblock_action_on
 	}},
@@ -204,7 +208,7 @@ minetest.register_node("mesecons_commandblock:commandblock_on", {
 	after_place_node = after_place,
 	on_receive_fields = receive_fields,
 	can_dig = can_dig,
-	sounds = default.node_sound_stone_defaults(),
+	sounds = mesecon.node_sound.stone,
 	mesecons = {effector = {
 		action_off = commandblock_action_off
 	}},
